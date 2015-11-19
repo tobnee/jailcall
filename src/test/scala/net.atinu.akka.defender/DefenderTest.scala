@@ -1,18 +1,15 @@
 package net.atinu.akka.defender
 
 import akka.actor.ActorSystem
+import akka.actor.Status.Failure
 import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit}
+import net.atinu.akka.defender.util.ActorTest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FunSuiteLike, Matchers}
 
 import scala.concurrent.Future
 
-class DefenderTest(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with Matchers with FunSuiteLike with BeforeAndAfterAll with ScalaFutures with DefaultTimeout {
-
-  import scala.concurrent.duration._
-
-  def this() = this(ActorSystem("MySpec"))
+class DefenderTest extends ActorTest("DefenderTest") {
 
   test("the result of a future is executed and returned") {
     AkkaDefender(system).defender.executeToRef(new DefendCommand[String] {
@@ -22,18 +19,13 @@ class DefenderTest(_system: ActorSystem) extends TestKit(_system) with ImplicitS
     expectMsg("succFuture")
   }
 
-  test("the result of a future is executed and returned") {
+  test("the result of a failed future is a failure message") {
+    val err = new scala.IllegalArgumentException("foo")
     AkkaDefender(system).defender.executeToRef(new DefendCommand[String] {
       def cmdKey = "a"
-      def execute = Future.successful("succFuture")
+      def execute = Future.failed(err)
     })
-    expectMsg("succFuture")
+    expectMsg(Failure(err))
   }
 
-
-
-
-  override def afterAll {
-    TestKit.shutdownActorSystem(system)
-  }
 }
