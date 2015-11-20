@@ -27,28 +27,48 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
   }
 
   test("cb gets called") {
-    val err = new scala.IllegalArgumentException("foo")
+    val err = new scala.IllegalArgumentException("foo1")
 
     val cmd = new DefendCommand[String] with StaticFallback[String] {
       def cmdKey = "load-data"
       def execute = Future.failed(err)
-      def fallback: String = "yey"
+      def fallback: String = "yey1"
     }
 
-    val cmd2 = new DefendCommand[String] with StaticFallback[String] {
+    val cmd2 = new DefendCommand[String] {
       def cmdKey = "load-data"
       def execute = Future.apply{
         Thread.sleep(200)
-        "foo"
+        "foo1"
       }
-      def fallback: String = "yey"
     }
 
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
     defender.executeToRef(cmd2)
     defender.executeToRef(cmd)
-    expectMsg("yey")
+    expectMsg("yey1")
+    expectMsg("yey1")
+  }
+
+  test("cb gets called 2") {
+    val err = new scala.IllegalArgumentException("foo2")
+
+    val cmd1 = new DefendCommand[String] {
+      def cmdKey = "load-data2"
+      def execute = Future.successful("yes1")
+    }
+
+    val cmd2 = new DefendCommand[String] with CmdFallback[String] {
+      def cmdKey = "load-data2"
+      def execute = Future.failed(err)
+      def fallback = cmd1
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd2)
+    defender.executeToRef(cmd2)
+    expectMsg("yes1")
   }
 }
 

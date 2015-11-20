@@ -1,15 +1,19 @@
 package net.atinu.akka.defender.internal
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.CircuitBreaker
+import akka.util.Timeout
 import net.atinu.akka.defender.internal.AkkaDefendActor.MsgKeyConf
-import net.atinu.akka.defender.{DefendCommand, StaticFallback}
+import net.atinu.akka.defender.{CmdFallback, DefendCommand, StaticFallback}
 
 import scala.concurrent.Future
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   import akka.pattern.pipe
+  import akka.pattern.ask
   import context.dispatcher
 
   val msgKeyToConf = collection.mutable.Map.empty[String, MsgKeyConf]
@@ -32,6 +36,10 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   def fallback(msg: DefendCommand[_], exec: Future[Any]): Future[Any] =  msg match {
     case static: StaticFallback[_] => exec.fallbackTo(Future.successful(static.fallback))
+    case dynamic: CmdFallback[_] =>
+      // TODO: Improve
+      implicit val to = Timeout.apply(30, TimeUnit.SECONDS)
+      exec.fallbackTo(self ? dynamic.fallback)
     case _ => exec
   }
 
