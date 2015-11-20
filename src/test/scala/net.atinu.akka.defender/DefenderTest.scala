@@ -1,15 +1,13 @@
 package net.atinu.akka.defender
 
-import akka.actor.ActorSystem
 import akka.actor.Status.Failure
-import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit}
+import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.util.ActorTest
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FunSuiteLike, Matchers}
 
 import scala.concurrent.Future
 
-class DefenderTest extends ActorTest("DefenderTest") {
+class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   test("the result of a future is executed and returned") {
     AkkaDefender(system).defender.executeToRef(new DefendCommand[String] {
@@ -28,4 +26,44 @@ class DefenderTest extends ActorTest("DefenderTest") {
     expectMsg(Failure(err))
   }
 
+  test("cb gets called") {
+    val err = new scala.IllegalArgumentException("foo")
+
+    val cmd = new DefendCommand[String] with StaticFallback[String] {
+      def cmdKey = "load-data"
+      def execute = Future.failed(err)
+      def fallback: String = "yey"
+    }
+
+    val cmd2 = new DefendCommand[String] with StaticFallback[String] {
+      def cmdKey = "load-data"
+      def execute = Future.apply{
+        Thread.sleep(200)
+        "foo"
+      }
+      def fallback: String = "yey"
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd)
+    defender.executeToRef(cmd2)
+    defender.executeToRef(cmd)
+    expectMsg("yey")
+  }
+}
+
+object DefenderTest {
+  val config =
+    ConfigFactory.parseString(
+      """defender {
+        |  command {
+        |    load-data {
+        |      circuit-breaker {
+        |        max-failures = 2,
+        |        call-timeout = 100 millis,
+        |        reset-timeout = 2 minutes
+        |      }
+        |    }
+        |  }
+        |}""".stripMargin).withFallback(ConfigFactory.defaultReference());
 }

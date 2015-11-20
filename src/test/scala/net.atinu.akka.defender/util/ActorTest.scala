@@ -2,6 +2,7 @@ package net.atinu.akka.defender.util
 
 import akka.actor.ActorSystem
 import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FunSuiteLike, Matchers}
 
@@ -10,7 +11,10 @@ class ActorTest(_system: ActorSystem) extends TestKit(_system) with ImplicitSend
 
   def this(name: String) = this(ActorSystem(name))
 
+  def this(name: String, cfg: Config) =  this(ActorSystem(name, cfg))
+
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
+
 }

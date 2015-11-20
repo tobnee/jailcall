@@ -2,8 +2,10 @@ package net.atinu.akka.defender.internal
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.CircuitBreaker
-import net.atinu.akka.defender.DefendCommand
 import net.atinu.akka.defender.internal.AkkaDefendActor.MsgKeyConf
+import net.atinu.akka.defender.{DefendCommand, StaticFallback}
+
+import scala.concurrent.Future
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -19,7 +21,18 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   def receive = {
     case msg: DefendCommand[_] =>
       val MsgKeyConf(cb) = msgKeyToConf.getOrElseUpdate(msg.cmdKey, newMsgKeyBasedConfig(msg.cmdKey))
-      cb.withCircuitBreaker(msg.execute) pipeTo sender()
+      call(msg, cb) pipeTo sender()
+  }
+
+  def call(msg: DefendCommand[_], cb: CircuitBreaker): Future[Any] = {
+    val exec = cb.withCircuitBreaker(msg.execute)
+    val execOrFallback = fallback(msg, exec)
+    execOrFallback
+  }
+
+  def fallback(msg: DefendCommand[_], exec: Future[Any]): Future[Any] =  msg match {
+    case static: StaticFallback[_] => exec.fallbackTo(Future.successful(static.fallback))
+    case _ => exec
   }
 
   private def newMsgKeyBasedConfig(msgKey: String) = {
