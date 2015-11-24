@@ -9,9 +9,8 @@ import org.scalatest.{BeforeAndAfterAll, FunSuiteLike, Matchers}
 class ActorTest(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with Matchers with FunSuiteLike with BeforeAndAfterAll with ScalaFutures with DefaultTimeout {
 
-  def this(name: String) = this(ActorSystem(name))
-
-  def this(name: String, cfg: Config) =  this(ActorSystem(name, cfg))
+  def this(name: String, cfg: Config) =  this(ActorSystem(name,
+    cfg.withFallback(ConfigFactory.load())))
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

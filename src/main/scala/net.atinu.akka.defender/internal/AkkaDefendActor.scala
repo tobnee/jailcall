@@ -1,19 +1,15 @@
 package net.atinu.akka.defender.internal
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.CircuitBreaker
-import akka.util.Timeout
-import net.atinu.akka.defender.internal.AkkaDefendActor.MsgKeyConf
+import net.atinu.akka.defender.internal.AkkaDefendActor.{FallbackAction, MsgKeyConf}
 import net.atinu.akka.defender.{CmdFallback, DefendCommand, StaticFallback}
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   import akka.pattern.pipe
-  import akka.pattern.ask
   import context.dispatcher
 
   val msgKeyToConf = collection.mutable.Map.empty[String, MsgKeyConf]
@@ -26,6 +22,9 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     case msg: DefendCommand[_] =>
       val MsgKeyConf(cb) = msgKeyToConf.getOrElseUpdate(msg.cmdKey, newMsgKeyBasedConfig(msg.cmdKey))
       call(msg, cb) pipeTo sender()
+    case FallbackAction(promise, msg) =>
+      val MsgKeyConf(cb) = msgKeyToConf.getOrElseUpdate(msg.cmdKey, newMsgKeyBasedConfig(msg.cmdKey))
+      promise.completeWith(call(msg, cb))
   }
 
   def call(msg: DefendCommand[_], cb: CircuitBreaker): Future[Any] = {
@@ -34,12 +33,14 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     execOrFallback
   }
 
-  def fallback(msg: DefendCommand[_], exec: Future[Any]): Future[Any] =  msg match {
+  def fallback(msg: DefendCommand[_], exec: Future[Any]): Future[Any] = msg match {
     case static: StaticFallback[_] => exec.fallbackTo(Future.successful(static.fallback))
     case dynamic: CmdFallback[_] =>
-      // TODO: Improve
-      implicit val to = Timeout.apply(30, TimeUnit.SECONDS)
-      exec.fallbackTo(self ? dynamic.fallback)
+      exec.fallbackTo {
+        val fallbackPromise = Promise.apply[Any]()
+        self ! FallbackAction(fallbackPromise, dynamic.fallback)
+        fallbackPromise.future
+      }
     case _ => exec
   }
 
@@ -54,6 +55,8 @@ object AkkaDefendActor {
   private[internal] case class MsgKeyConf(circuitBreaker: CircuitBreaker)
 
   private[internal] case object GetKeyConfigs
+
+  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: DefendCommand[_])
 
   def props = Props(new AkkaDefendActor)
 }
