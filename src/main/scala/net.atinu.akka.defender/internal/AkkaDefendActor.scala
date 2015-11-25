@@ -1,8 +1,9 @@
 package net.atinu.akka.defender.internal
 
 import akka.actor.{Actor, ActorLogging, Props}
+import akka.dispatch.MessageDispatcher
 import akka.pattern.CircuitBreaker
-import net.atinu.akka.defender.internal.AkkaDefendActor.{FallbackAction, MsgKeyConf}
+import net.atinu.akka.defender.internal.AkkaDefendActor.{FallbackAction, CmdResources}
 import net.atinu.akka.defender._
 
 import scala.concurrent.{Future, Promise}
@@ -12,40 +13,41 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   import akka.pattern.pipe
   import context.dispatcher
 
-  val msgKeyToConf = collection.mutable.Map.empty[String, MsgKeyConf]
+  val msgKeyToConf = collection.mutable.Map.empty[String, CmdResources]
 
   val rootConfig = context.system.settings.config
-  val cbConfigBuilder = new CircuitBreakerConfigBuilder(rootConfig)
-  val cbBuilder = new CircuitBreakerBuilder(cbConfigBuilder, context.system.scheduler)
+  val cbConfigBuilder = new MsgConfigBuilder(rootConfig)
+  val cbBuilder = new CircuitBreakerBuilder(context.system.scheduler)
+  val dispatcherLookup = new DispatcherLookup(context.system.dispatchers)
 
   def receive = {
     case msg: DefendCommand[_] =>
-      val MsgKeyConf(cb) = getOrUpdateConf(msg)
-      callAsync(msg, cb) pipeTo sender()
+      val resources = resourcesFor(msg)
+      callAsync(msg, resources) pipeTo sender()
 
     case msg: SyncDefendCommand[_] =>
-      val MsgKeyConf(cb) = getOrUpdateConf(msg)
-      callSync(msg, cb) pipeTo sender()
+      val resources = resourcesFor(msg)
+      callSync(msg, resources) pipeTo sender()
 
     case FallbackAction(promise, msg) =>
-      val MsgKeyConf(cb) = getOrUpdateConf(msg)
-      promise.completeWith(callAsync(msg, cb))
+      val resources = resourcesFor(msg)
+      promise.completeWith(callAsync(msg, resources))
   }
 
-  def getOrUpdateConf(msg: NamedCommand[_]): MsgKeyConf = {
-    msgKeyToConf.getOrElseUpdate(msg.cmdKey, newMsgKeyBasedConfig(msg.cmdKey))
+  def resourcesFor(msg: NamedCommand[_]): CmdResources = {
+    msgKeyToConf.getOrElseUpdate(msg.cmdKey, buildCommandResources(msg.cmdKey))
   }
 
-  def callSync(msg: SyncDefendCommand[_], cb: CircuitBreaker): Future[Any] = {
-    execFlow(msg, cb, Future.apply(msg.execute)(context.dispatcher))
+  def callSync(msg: SyncDefendCommand[_], resources: CmdResources): Future[Any] = {
+    execFlow(msg, resources, Future.apply(msg.execute)(resources.dispatcher))
   }
 
-  def callAsync(msg: DefendCommand[_], cb: CircuitBreaker): Future[Any] = {
-    execFlow(msg, cb, msg.execute)
+  def callAsync(msg: DefendCommand[_], resources: CmdResources): Future[Any] = {
+    execFlow(msg, resources, msg.execute)
   }
 
-  def execFlow(msg: NamedCommand[_], cb: CircuitBreaker, execute: => Future[Any]): Future[Any] = {
-    val exec = cb.withCircuitBreaker(execute)
+  def execFlow(msg: NamedCommand[_], resources: CmdResources, execute: => Future[Any]): Future[Any] = {
+    val exec = resources.circuitBreaker.withCircuitBreaker(execute)
     val execOrFallback = fallback(msg, exec)
     execOrFallback
   }
@@ -61,14 +63,17 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     case _ => exec
   }
 
-  private def newMsgKeyBasedConfig(msgKey: String) = {
-    MsgKeyConf(cbBuilder.createCb(msgKey, log))
+  private def buildCommandResources(msgKey: String) = {
+    val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
+    val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
+    val dispatcher = dispatcherLookup.lookupDispatcher(msgKey)
+    CmdResources(cb, cfg, dispatcher)
   }
 }
 
 object AkkaDefendActor {
 
-  private[internal] case class MsgKeyConf(circuitBreaker: CircuitBreaker)
+  private[internal] case class CmdResources(circuitBreaker: CircuitBreaker, cfg: MsgConfig, dispatcher: MessageDispatcher)
 
   private[internal] case object GetKeyConfigs
 

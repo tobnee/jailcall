@@ -18,22 +18,43 @@ class ConfigTest extends FunSuite with Matchers {
         |        call-timeout = 3 seconds,
         |        reset-timeout = 2 minutes
         |      }
+        |      dispatcher = "foo"
         |    }
         |  }
         |}""".stripMargin)
+  val customCfg2 = ConfigFactory
+    .parseString(
+      """defender {
+        |  command {
+        |    load-data {
+        |    }
+        |  }
+        |}""".stripMargin)
+
   val cfg = refCfg.withFallback(customCfg)
 
   test("the default config gets loaded as expected") {
     val cfg = refCfg.withFallback(customCfg)
-    val builder = new CircuitBreakerConfigBuilder(refCfg)
-    val defaultCbConfig = builder.loadCbConfig("foo")
-    defaultCbConfig should equal(CircuitBreakerConfig(10, 2.seconds, 1.minute))
+    val builder = new MsgConfigBuilder(refCfg)
+    val defaultCbConfig = builder.loadConfigForKey("foo")
+    defaultCbConfig.cbConfig should equal(CircuitBreakerConfig(10, 2.seconds, 1.minute))
   }
 
   test("load a custom config if specified") {
     val cfg = refCfg.withFallback(customCfg)
-    val builder = new CircuitBreakerConfigBuilder(cfg)
-    builder.loadCbConfig("load-data") should equal(CircuitBreakerConfig(11, 3.seconds, 2.minutes))
+    val builder = new MsgConfigBuilder(cfg)
+    builder.loadConfigForKey("load-data").cbConfig should equal(CircuitBreakerConfig(11, 3.seconds, 2.minutes))
   }
 
+  test("load a dispatcher if specified") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    builder.loadConfigForKey("load-data").dispatcherName should equal(Some("foo"))
+  }
+
+  test("ignore dispatcher if specified") {
+    val cfg = refCfg.withFallback(customCfg2)
+    val builder = new MsgConfigBuilder(cfg)
+    builder.loadConfigForKey("load-data").dispatcherName should equal(None)
+  }
 }
