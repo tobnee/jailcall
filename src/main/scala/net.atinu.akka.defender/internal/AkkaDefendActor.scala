@@ -1,10 +1,10 @@
 package net.atinu.akka.defender.internal
 
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.dispatch.MessageDispatcher
 import akka.pattern.CircuitBreaker
 import net.atinu.akka.defender.internal.AkkaDefendActor.{FallbackAction, CmdResources}
 import net.atinu.akka.defender._
+import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{Future, Promise}
 
@@ -39,7 +39,11 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   def callSync(msg: SyncDefendCommand[_], resources: CmdResources): Future[Any] = {
-    execFlow(msg, resources, Future.apply(msg.execute)(resources.dispatcher))
+    val dispatcherHolder = resources.dispatcherHolder
+    if(dispatcherHolder.isDefault) {
+      log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
+    }
+    execFlow(msg, resources, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
   def callAsync(msg: DefendCommand[_], resources: CmdResources): Future[Any] = {
@@ -66,14 +70,16 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   private def buildCommandResources(msgKey: String) = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
-    val dispatcher = dispatcherLookup.lookupDispatcher(msgKey)
-    CmdResources(cb, cfg, dispatcher)
+    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey)
+    val resources = CmdResources(cb, cfg, dispatcherHolder)
+    log.debug("initialize {} command resources with config {}", msgKey, cfg)
+    resources
   }
 }
 
 object AkkaDefendActor {
 
-  private[internal] case class CmdResources(circuitBreaker: CircuitBreaker, cfg: MsgConfig, dispatcher: MessageDispatcher)
+  private[internal] case class CmdResources(circuitBreaker: CircuitBreaker, cfg: MsgConfig, dispatcherHolder: DispatcherHolder)
 
   private[internal] case object GetKeyConfigs
 

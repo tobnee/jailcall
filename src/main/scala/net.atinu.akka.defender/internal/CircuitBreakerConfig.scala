@@ -7,6 +7,7 @@ import akka.dispatch.{MessageDispatcher, Dispatchers}
 import akka.event.LoggingAdapter
 import akka.pattern.CircuitBreaker
 import com.typesafe.config.Config
+import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.duration._
 
@@ -66,24 +67,27 @@ private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
   }
 
   private def createCustomCb(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
-    CircuitBreaker.create(scheduler,
+    CircuitBreaker.apply(scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
       resetTimeout = cbConfig.resetTimeout)
-      .onClose(log.debug("circuit breaker for command {} is closed again", msgKey))
-      .onHalfOpen(log.debug("circuit breaker for command {} is half open, wait for first call to succeed", msgKey))
-      .onOpen(log.debug("circuit breaker for command {} is open for {}", msgKey, cbConfig.resetTimeout))
+      .onClose(log.info("circuit breaker for command {} is closed again", msgKey))
+      .onHalfOpen(log.info("circuit breaker for command {} is half open, wait for first call to succeed", msgKey))
+      .onOpen(log.warning("circuit breaker for command {} is open for {}", msgKey, cbConfig.resetTimeout))
   }
 }
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(dispatcherName: String): MessageDispatcher = {
-    if(dispatchers.hasDispatcher(dispatcherName)) dispatchers.lookup(dispatcherName)
-    else dispatchers.defaultGlobalDispatcher
+  def lookupDispatcher(dispatcherName: String): DispatcherHolder = {
+    if(dispatchers.hasDispatcher(dispatcherName))
+      DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
+    else DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
   }
 }
 
+object DispatcherLookup {
 
-
+  case class DispatcherHolder(dispatcher: MessageDispatcher, isDefault: Boolean)
+}
 
