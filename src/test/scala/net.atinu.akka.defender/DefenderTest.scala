@@ -87,6 +87,19 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
     defender.executeToRef(cmd2)
     expectMsg("yes1")
   }
+
+  test("A sync command gets called") {
+    val err = new scala.IllegalArgumentException("foo2")
+
+    val cmd1 = new SyncDefendCommand[String] {
+      def cmdKey = "load-data2"
+      def execute = "yes2"
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd1)
+    expectMsg("yes2")
+  }
 }
 
 object DefenderTest {

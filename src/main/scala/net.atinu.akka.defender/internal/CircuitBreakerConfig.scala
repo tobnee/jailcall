@@ -7,7 +7,6 @@ import akka.event.LoggingAdapter
 import akka.pattern.CircuitBreaker
 import com.typesafe.config.Config
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 private[internal] case class CircuitBreakerConfig(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
@@ -39,21 +38,17 @@ private[internal] class CircuitBreakerConfigBuilder(config: Config) {
   }
 }
 
-private[internal] class CircuitBreakerBuilder(config: CircuitBreakerConfigBuilder, defaultEc: ExecutionContext, scheduler: Scheduler) {
+private[internal] class CircuitBreakerBuilder(config: CircuitBreakerConfigBuilder, scheduler: Scheduler) {
 
   def createCb(msgKey: String, log: LoggingAdapter): CircuitBreaker = {
-    createCb(msgKey, log, defaultEc)
+    createCustomCb(msgKey, config.loadCbConfig(msgKey), log)
   }
 
-  def createCb(msgKey: String, log: LoggingAdapter, ec: ExecutionContext): CircuitBreaker = {
-    createCustomCb(msgKey, config.loadCbConfig(msgKey), log, ec)
-  }
-
-  private def createCustomCb(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter, ec: ExecutionContext) = {
-    new CircuitBreaker(scheduler,
+  private def createCustomCb(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
+    CircuitBreaker.create(scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
-      resetTimeout = cbConfig.resetTimeout)(ec)
+      resetTimeout = cbConfig.resetTimeout)
       .onClose(log.debug("circuit breaker for command {} is closed again", msgKey))
       .onHalfOpen(log.debug("circuit breaker for command {} is half open, wait for first call to succeed", msgKey))
       .onOpen(log.debug("circuit breaker for command {} is open for {}", msgKey, cbConfig.resetTimeout))
