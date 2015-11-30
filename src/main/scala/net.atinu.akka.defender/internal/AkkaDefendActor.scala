@@ -29,9 +29,13 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
       val resources = resourcesFor(msg)
       callSync(msg, resources) pipeTo sender()
 
-    case FallbackAction(promise, msg) =>
+    case FallbackAction(promise, msg: DefendCommand[_]) =>
       val resources = resourcesFor(msg)
       promise.completeWith(callAsync(msg, resources))
+
+    case FallbackAction(promise, msg: SyncDefendCommand[_]) =>
+      val resources = resourcesFor(msg)
+      promise.completeWith(callSync(msg, resources))
   }
 
   def resourcesFor(msg: NamedCommand[_]): CmdResources = {
@@ -70,7 +74,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   private def buildCommandResources(msgKey: String) = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
-    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey)
+    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
     val resources = CmdResources(cb, cfg, dispatcherHolder)
     log.debug("initialize {} command resources with config {}", msgKey, cfg)
     resources
@@ -83,7 +87,7 @@ object AkkaDefendActor {
 
   private[internal] case object GetKeyConfigs
 
-  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: DefendCommand[_])
+  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: NamedCommand[_])
 
   def props = Props(new AkkaDefendActor)
 }

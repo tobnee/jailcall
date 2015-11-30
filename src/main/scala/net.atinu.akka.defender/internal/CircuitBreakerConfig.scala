@@ -3,7 +3,7 @@ package net.atinu.akka.defender.internal
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Scheduler
-import akka.dispatch.{MessageDispatcher, Dispatchers}
+import akka.dispatch.{Dispatchers, MessageDispatcher}
 import akka.event.LoggingAdapter
 import akka.pattern.CircuitBreaker
 import com.typesafe.config.Config
@@ -17,7 +17,7 @@ private[internal] case class CircuitBreakerConfig(maxFailures: Int, callTimeout:
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
-  def loadConfigForKey(key: String) = {
+  def loadConfigForKey(key: String): MsgConfig = {
     MsgConfig(loadCbConfig(key), loadDispatcherConfig(key))
   }
 
@@ -63,11 +63,11 @@ private[internal] class MsgConfigBuilder(config: Config) {
 private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
 
   def createCb(msgKey: String, cfg: CircuitBreakerConfig, log: LoggingAdapter): CircuitBreaker = {
-    createCustomCb(msgKey, cfg, log)
+    createCbFromConfig(msgKey, cfg, log)
   }
 
-  private def createCustomCb(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
-    CircuitBreaker.apply(scheduler,
+  private def createCbFromConfig(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
+    CircuitBreaker(scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
       resetTimeout = cbConfig.resetTimeout)
@@ -79,10 +79,20 @@ private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(dispatcherName: String): DispatcherHolder = {
-    if(dispatchers.hasDispatcher(dispatcherName))
-      DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
-    else DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
+  def lookupDispatcher(msgKey: String, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {
+    msgConfig.dispatcherName match {
+      case Some(dispatcherName) if dispatchers.hasDispatcher(dispatcherName) =>
+          DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
+
+      case Some(dispatcherName) =>
+        log.warning("dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
+          dispatcherName, msgKey)
+        DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
+
+      case _ =>
+        DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
+    }
+
   }
 }
 

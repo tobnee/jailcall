@@ -24,5 +24,5 @@ trait StaticFallback[T] { self: NamedCommand[T] =>
 
 trait CmdFallback[T] { self: NamedCommand[T] =>
 
-  def fallback: DefendCommand[T]
+  def fallback: NamedCommand[T]
 }

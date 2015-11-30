@@ -27,28 +27,35 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
   }
 
   test("the cb gets called if the failure limit is hit") {
-    val err = new scala.IllegalArgumentException("foo1")
-
     val cmd = new DefendCommand[String] {
       val cmdKey = "load-data"
       // check why apply will result in open cb but no cb exception
-      def execute = Future.successful{
-        Thread.sleep(500)
+      import scala.concurrent.ExecutionContext.Implicits.global
+      def execute = Future {
+        Thread.sleep(2000)
         "foo1"
       }
     }
 
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
-    defender.executeToRef(cmd)
-    defender.executeToRef(cmd)
     expectMsgPF(){
       case Failure(e) =>
         e shouldBe a [scala.concurrent.TimeoutException]
     }
+
+    defender.executeToRef(cmd)
     expectMsgPF(){
       case Failure(e) => e shouldBe a [scala.concurrent.TimeoutException]
     }
+
+    defender.executeToRef(cmd)
+    expectMsgPF(){
+      case Failure(e) =>
+        e shouldBe a [CircuitBreakerOpenException]
+    }
+
+    defender.executeToRef(cmd)
     expectMsgPF(){
       case Failure(e) =>
         e shouldBe a [CircuitBreakerOpenException]
@@ -59,7 +66,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
     val err = new scala.IllegalArgumentException("foo1")
 
     val cmd = new DefendCommand[String] with StaticFallback[String] {
-      def cmdKey = "load-data"
+      def cmdKey = "load-data-0"
       def execute = Future.failed(err)
       def fallback: String = "yey1"
     }
@@ -100,6 +107,54 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
     defender.executeToRef(cmd1)
     expectMsg("yes2")
   }
+
+  test("A dynamic (cmd based) fallback is used in case of sync cmd failure") {
+    val err = new scala.IllegalArgumentException("foo2")
+
+    val cmd1 = new SyncDefendCommand[String] {
+      def cmdKey = "load-data2"
+      def execute = "yes3"
+    }
+
+    val cmd2 = new SyncDefendCommand[String] with CmdFallback[String] {
+      def cmdKey = "load-data2"
+      def execute = throw err
+      def fallback = cmd1
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd2)
+    expectMsg("yes3")
+  }
+
+  test("the cb gets called if the failure limit is hit (sync)") {
+    val cmd = new SyncDefendCommand[String] {
+      val cmdKey = "load-data-sync"
+      // check why apply will result in open cb but no cb exception
+      def execute = {
+        Thread.sleep(1000)
+        "foo1"
+      }
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd)
+    expectMsgPF(){
+      case Failure(e) =>
+        e shouldBe a [scala.concurrent.TimeoutException]
+    }
+
+    defender.executeToRef(cmd)
+    expectMsgPF(){
+      case Failure(e) => e shouldBe a [scala.concurrent.TimeoutException]
+    }
+    defender.executeToRef(cmd)
+    expectMsgPF(){
+      case Failure(e) =>
+        e shouldBe a [CircuitBreakerOpenException]
+    }
+    expectNoMsg()
+  }
 }
 
 object DefenderTest {
@@ -114,6 +169,18 @@ object DefenderTest {
         |        reset-timeout = 2 minutes
         |      }
         |    }
+        |    load-data-sync {
+        |      circuit-breaker {
+        |        max-failures = 2,
+        |        call-timeout = 200 millis,
+        |        reset-timeout = 2 minutes
+        |      }
+        |      dispatcher = sync-call-dispatcher
+        |    }
         |  }
+        |}
+        |sync-call-dispatcher {
+        |  executor = "thread-pool-executor"
+        |  type = PinnedDispatcher
         |}""".stripMargin);
 }
