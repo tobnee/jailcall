@@ -22,27 +22,27 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   def receive = {
     case msg: DefendCommand[_] =>
-      val resources = resourcesFor(msg)
-      callAsync(msg, resources) pipeTo sender()
+      callAsync(msg) pipeTo sender()
 
     case msg: SyncDefendCommand[_] =>
-      val resources = resourcesFor(msg)
-      callSync(msg, resources) pipeTo sender()
+      callSync(msg) pipeTo sender()
 
     case FallbackAction(promise, msg: DefendCommand[_]) =>
-      val resources = resourcesFor(msg)
-      promise.completeWith(callAsync(msg, resources))
+      fallbackFuture(promise, callAsync(msg))
 
     case FallbackAction(promise, msg: SyncDefendCommand[_]) =>
-      val resources = resourcesFor(msg)
-      promise.completeWith(callSync(msg, resources))
+      fallbackFuture(promise, callSync(msg))
   }
+
+  def fallbackFuture(promise: Promise[Any], res: Future[_]) =
+    promise.completeWith(res)
 
   def resourcesFor(msg: NamedCommand[_]): CmdResources = {
     msgKeyToConf.getOrElseUpdate(msg.cmdKey, buildCommandResources(msg.cmdKey))
   }
 
-  def callSync(msg: SyncDefendCommand[_], resources: CmdResources): Future[Any] = {
+  def callSync(msg: SyncDefendCommand[_]): Future[Any] = {
+    val resources = resourcesFor(msg)
     val dispatcherHolder = resources.dispatcherHolder
     if(dispatcherHolder.isDefault) {
       log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
@@ -50,7 +50,8 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     execFlow(msg, resources, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: DefendCommand[_], resources: CmdResources): Future[Any] = {
+  def callAsync(msg: DefendCommand[_]): Future[Any] = {
+    val resources = resourcesFor(msg)
     execFlow(msg, resources, msg.execute)
   }
 
@@ -71,7 +72,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     case _ => exec
   }
 
-  private def buildCommandResources(msgKey: String) = {
+  private def buildCommandResources(msgKey: String): CmdResources = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
     val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
