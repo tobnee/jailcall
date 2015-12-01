@@ -13,3 +13,4 @@ dist
 /.project
 /.settings
 *~
+.DS_Store
