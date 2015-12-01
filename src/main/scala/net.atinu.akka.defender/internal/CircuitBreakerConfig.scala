@@ -7,6 +7,7 @@ import akka.dispatch.{Dispatchers, MessageDispatcher}
 import akka.event.LoggingAdapter
 import akka.pattern.CircuitBreaker
 import com.typesafe.config.Config
+import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.duration._
@@ -17,27 +18,27 @@ private[internal] case class CircuitBreakerConfig(maxFailures: Int, callTimeout:
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
-  def loadConfigForKey(key: String): MsgConfig = {
+  def loadConfigForKey(key: DefendCommandKey): MsgConfig = {
     MsgConfig(loadCbConfig(key), loadDispatcherConfig(key))
   }
 
-  private def loadDispatcherConfig(key: String) = {
+  private def loadDispatcherConfig(key: DefendCommandKey) = {
     loadConfigString(cmdKeyDispatcherConfigPath(key))
   }
 
   private val defaultCbConfig =
-    loadCbConfigForKey("defender.circuit-breaker.default")
+    loadCbConfigInPath("defender.circuit-breaker.default")
       .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
-  private def loadCbConfig(key: String): CircuitBreakerConfig =
-    loadCbConfigForKey(cmdKeyCBConfigPath(key)).getOrElse(defaultCbConfig)
+  private def loadCbConfig(key: DefendCommandKey): CircuitBreakerConfig =
+    loadCbConfigInPath(cmdKeyCBConfigPath(key)).getOrElse(defaultCbConfig)
 
-  private def cmdKeyCBConfigPath(key: String) = s"defender.command.$key.circuit-breaker"
+  private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
 
-  private def cmdKeyDispatcherConfigPath(key: String) = s"defender.command.$key.dispatcher"
+  private def cmdKeyDispatcherConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.dispatcher"
 
-  private def loadCbConfigForKey(key: String) = {
-    val cfg = loadConfig(key)
+  private def loadCbConfigInPath(path: String) = {
+    val cfg = loadConfig(path)
     cfg.map { cbConfig =>
       CircuitBreakerConfig(
         maxFailures = cbConfig.getInt("max-failures"),
@@ -47,8 +48,8 @@ private[internal] class MsgConfigBuilder(config: Config) {
     }
   }
 
-  private def loadConfig(key: String): Option[Config] = {
-    if (config.hasPath(key)) Some(config.getConfig(key)) else None
+  private def loadConfig(path: String): Option[Config] = {
+    if (config.hasPath(path)) Some(config.getConfig(path)) else None
   }
 
   private def loadConfigString(key: String): Option[String] = {
@@ -62,11 +63,11 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
 private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
 
-  def createCb(msgKey: String, cfg: CircuitBreakerConfig, log: LoggingAdapter): CircuitBreaker = {
+  def createCb(msgKey: DefendCommandKey, cfg: CircuitBreakerConfig, log: LoggingAdapter): CircuitBreaker = {
     createCbFromConfig(msgKey, cfg, log)
   }
 
-  private def createCbFromConfig(msgKey: String, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
+  private def createCbFromConfig(msgKey: DefendCommandKey, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
     CircuitBreaker(scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
@@ -79,14 +80,14 @@ private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(msgKey: String, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {
+  def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {
     msgConfig.dispatcherName match {
       case Some(dispatcherName) if dispatchers.hasDispatcher(dispatcherName) =>
           DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
 
       case Some(dispatcherName) =>
         log.warning("dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
-          dispatcherName, msgKey)
+          dispatcherName, msgKey.name)
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
 
       case _ =>
