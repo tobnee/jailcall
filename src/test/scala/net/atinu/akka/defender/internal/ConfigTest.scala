@@ -1,7 +1,7 @@
 package net.atinu.akka.defender.internal
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{ FunSuite, Matchers }
 import net.atinu.akka.defender._
 
 class ConfigTest extends FunSuite with Matchers {
@@ -22,7 +22,8 @@ class ConfigTest extends FunSuite with Matchers {
         |      dispatcher = "foo"
         |    }
         |  }
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
   val customCfg2 = ConfigFactory
     .parseString(
       """defender {
@@ -30,7 +31,8 @@ class ConfigTest extends FunSuite with Matchers {
         |    load-data {
         |    }
         |  }
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
 
   val cfg = refCfg.withFallback(customCfg)
 

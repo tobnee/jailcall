@@ -1,6 +1,5 @@
 package net.atinu.akka.defender
 
-
 object DefendCommandKey {
 
   def apply(_name: String) = new DefaultDefendCommandKey {

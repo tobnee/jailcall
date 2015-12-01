@@ -39,7 +39,6 @@ object DefendCommand {
 
 abstract class DefendCommand[T] extends DefendExecution[T] with DefaultCommandNaming[T] {
 
-
 }
 
 object SyncDefendCommand {

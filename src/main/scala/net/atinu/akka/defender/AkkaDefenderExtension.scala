@@ -20,7 +20,7 @@ class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension w
   def lookup(): ExtensionId[_ <: Extension] = AkkaDefender
 }
 
-class AkkaDefender private[defender](defenderRef: ActorRef) {
+class AkkaDefender private[defender] (defenderRef: ActorRef) {
 
   def executeToRef[T](cmd: NamedCommand[T])(implicit sender: ActorRef = Actor.noSender): Unit = {
     defenderRef ! cmd

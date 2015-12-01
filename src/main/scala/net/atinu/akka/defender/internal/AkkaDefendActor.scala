@@ -1,12 +1,12 @@
 package net.atinu.akka.defender.internal
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.pattern.CircuitBreaker
-import net.atinu.akka.defender.internal.AkkaDefendActor.{FallbackAction, CmdResources}
+import net.atinu.akka.defender.internal.AkkaDefendActor.{ FallbackAction, CmdResources }
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -44,7 +44,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   def callSync(msg: SyncDefendExecution[_]): Future[Any] = {
     val resources = resourcesFor(msg)
     val dispatcherHolder = resources.dispatcherHolder
-    if(dispatcherHolder.isDefault) {
+    if (dispatcherHolder.isDefault) {
       log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
     }
     execFlow(msg, resources, Future.apply(msg.execute)(dispatcherHolder.dispatcher))

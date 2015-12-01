@@ -3,7 +3,7 @@ package net.atinu.akka.defender.internal
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Scheduler
-import akka.dispatch.{Dispatchers, MessageDispatcher}
+import akka.dispatch.{ Dispatchers, MessageDispatcher }
 import akka.event.LoggingAdapter
 import akka.pattern.CircuitBreaker
 import com.typesafe.config.Config
@@ -68,10 +68,12 @@ private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
   }
 
   private def createCbFromConfig(msgKey: DefendCommandKey, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
-    CircuitBreaker(scheduler,
+    CircuitBreaker(
+      scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
-      resetTimeout = cbConfig.resetTimeout)
+      resetTimeout = cbConfig.resetTimeout
+    )
       .onClose(log.info("circuit breaker for command {} is closed again", msgKey))
       .onHalfOpen(log.info("circuit breaker for command {} is half open, wait for first call to succeed", msgKey))
       .onOpen(log.warning("circuit breaker for command {} is open for {}", msgKey, cbConfig.resetTimeout))
@@ -83,11 +85,13 @@ private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
   def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {
     msgConfig.dispatcherName match {
       case Some(dispatcherName) if dispatchers.hasDispatcher(dispatcherName) =>
-          DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
+        DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
 
       case Some(dispatcherName) =>
-        log.warning("dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
-          dispatcherName, msgKey.name)
+        log.warning(
+          "dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
+          dispatcherName, msgKey.name
+        )
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
 
       case _ =>

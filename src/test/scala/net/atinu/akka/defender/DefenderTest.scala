@@ -39,26 +39,26 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
 
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
-    expectMsgPF(){
+    expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a [scala.concurrent.TimeoutException]
+        e shouldBe a[scala.concurrent.TimeoutException]
     }
 
     defender.executeToRef(cmd)
-    expectMsgPF(){
-      case Failure(e) => e shouldBe a [scala.concurrent.TimeoutException]
+    expectMsgPF() {
+      case Failure(e) => e shouldBe a[scala.concurrent.TimeoutException]
     }
 
     defender.executeToRef(cmd)
-    expectMsgPF(){
+    expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a [CircuitBreakerOpenException]
+        e shouldBe a[CircuitBreakerOpenException]
     }
 
     defender.executeToRef(cmd)
-    expectMsgPF(){
+    expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a [CircuitBreakerOpenException]
+        e shouldBe a[CircuitBreakerOpenException]
     }
   }
 
@@ -132,19 +132,19 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
 
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
-    expectMsgPF(){
+    expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a [scala.concurrent.TimeoutException]
+        e shouldBe a[scala.concurrent.TimeoutException]
     }
 
     defender.executeToRef(cmd)
-    expectMsgPF(){
-      case Failure(e) => e shouldBe a [scala.concurrent.TimeoutException]
+    expectMsgPF() {
+      case Failure(e) => e shouldBe a[scala.concurrent.TimeoutException]
     }
     defender.executeToRef(cmd)
-    expectMsgPF(){
+    expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a [CircuitBreakerOpenException]
+        e shouldBe a[CircuitBreakerOpenException]
     }
     expectNoMsg()
   }
@@ -175,5 +175,6 @@ object DefenderTest {
         |sync-call-dispatcher {
         |  executor = "thread-pool-executor"
         |  type = PinnedDispatcher
-        |}""".stripMargin);
+        |}""".stripMargin
+    );
 }
