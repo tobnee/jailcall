@@ -79,16 +79,9 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
   test("A dynamic (cmd based) fallback is used in case of failure") {
     val err = new scala.IllegalArgumentException("foo2")
 
-    val cmd1 = new DefendExecution[String] {
-      def cmdKey = "load-data2".asKey
-      def execute = Future.successful("yes1")
-    }
+    val cmd1 = DefendCommand.apply("load-data2", exec = Future.successful("yes1"))
 
-    val cmd2 = new DefendExecution[String] with CmdFallback[String] {
-      def cmdKey = "load-data2".asKey
-      def execute = Future.failed(err)
-      def fallback = cmd1
-    }
+    val cmd2 = DefendCommand.applyWithCmdFallback("load-data2", exec = Future.failed(err), fb = cmd1)
 
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd2)

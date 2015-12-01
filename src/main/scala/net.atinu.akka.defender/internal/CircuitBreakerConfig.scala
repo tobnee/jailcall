@@ -93,7 +93,6 @@ private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
       case _ =>
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
     }
-
   }
 }
 
