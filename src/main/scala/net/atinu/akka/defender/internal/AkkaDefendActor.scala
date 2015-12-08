@@ -1,9 +1,9 @@
 package net.atinu.akka.defender.internal
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import akka.pattern.CircuitBreaker
-import net.atinu.akka.defender.internal.AkkaDefendActor.{ FallbackAction, CmdResources }
+import akka.pattern.AkkaDefendCircuitBreaker
 import net.atinu.akka.defender._
+import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdResources, FallbackAction }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, Promise }
@@ -84,7 +84,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
 object AkkaDefendActor {
 
-  private[internal] case class CmdResources(circuitBreaker: CircuitBreaker, cfg: MsgConfig, dispatcherHolder: DispatcherHolder)
+  private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig, dispatcherHolder: DispatcherHolder)
 
   private[internal] case object GetKeyConfigs
 

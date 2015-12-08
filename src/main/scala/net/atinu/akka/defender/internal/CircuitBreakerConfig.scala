@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Scheduler
 import akka.dispatch.{ Dispatchers, MessageDispatcher }
 import akka.event.LoggingAdapter
-import akka.pattern.CircuitBreaker
+import akka.pattern.AkkaDefendCircuitBreaker
 import com.typesafe.config.Config
 import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
@@ -63,12 +63,12 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
 private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
 
-  def createCb(msgKey: DefendCommandKey, cfg: CircuitBreakerConfig, log: LoggingAdapter): CircuitBreaker = {
+  def createCb(msgKey: DefendCommandKey, cfg: CircuitBreakerConfig, log: LoggingAdapter): AkkaDefendCircuitBreaker = {
     createCbFromConfig(msgKey, cfg, log)
   }
 
   private def createCbFromConfig(msgKey: DefendCommandKey, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
-    CircuitBreaker(
+    AkkaDefendCircuitBreaker(
       scheduler,
       maxFailures = cbConfig.maxFailures,
       callTimeout = cbConfig.callTimeout,
