@@ -1,12 +1,14 @@
 package net.atinu.akka.defender.internal
 
-import akka.actor.{ Actor, ActorLogging, Props }
-import akka.pattern.AkkaDefendCircuitBreaker
+import akka.actor.{ ActorRef, Actor, ActorLogging, Props }
+import akka.pattern.{ CircuitBreakerOpenException, AkkaDefendCircuitBreaker }
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdResources, FallbackAction }
+import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.UpdateStats
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -56,7 +58,15 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   def execFlow(msg: NamedCommand[_], resources: CmdResources, execute: => Future[Any]): Future[Any] = {
+    val startTime = System.currentTimeMillis();
     val exec = resources.circuitBreaker.withCircuitBreaker(execute)
+    exec.onComplete {
+      case Success(_) | Failure(_: CircuitBreakerOpenException) =>
+        val t = System.currentTimeMillis() - startTime
+        log.debug("time for cmd {} was {} ms", msg.cmdKey.name, t)
+        resources.statsActor ! UpdateStats(t)
+      case _ =>
+    }
     val execOrFallback = fallback(msg, exec)
     execOrFallback
   }
@@ -73,22 +83,32 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   private def buildCommandResources(msgKey: DefendCommandKey): CmdResources = {
+    val statsActor = statsActorForKey(msgKey)
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
     val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
-    val resources = CmdResources(cb, cfg, dispatcherHolder)
+    val resources = CmdResources(cb, cfg, dispatcherHolder, statsActor)
     log.debug("initialize {} command resources with config {}", msgKey, cfg)
     resources
+  }
+
+  def statsActorForKey(cmdKey: DefendCommandKey) = {
+    val cmdKeyName = cmdKey.name
+    context.actorOf(AkkaDefendCmdKeyStatsActor.props, s"stats-$cmdKeyName")
   }
 }
 
 object AkkaDefendActor {
 
-  private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig, dispatcherHolder: DispatcherHolder)
+  private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
+    dispatcherHolder: DispatcherHolder, statsActor: ActorRef)
 
   private[internal] case object GetKeyConfigs
 
   private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: NamedCommand[_])
 
+  private[internal] case class CmdMetrics(name: DefendCommandKey)
+
   def props = Props(new AkkaDefendActor)
+
 }
