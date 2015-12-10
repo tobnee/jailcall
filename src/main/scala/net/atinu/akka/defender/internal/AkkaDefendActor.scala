@@ -8,7 +8,7 @@ import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.UpdateStats
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success }
+import scala.util.{ Try, Failure, Success }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -72,7 +72,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   def fallback(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
-    case static: StaticFallback[_] => exec.fallbackTo(Future.successful(static.fallback))
+    case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
     case dynamic: CmdFallback[_] =>
       exec.fallbackTo {
         val fallbackPromise = Promise.apply[Any]()
