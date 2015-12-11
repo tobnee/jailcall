@@ -4,7 +4,7 @@ import akka.actor.{ ActorRef, Actor, ActorLogging, Props }
 import akka.pattern.{ CircuitBreakerOpenException, AkkaDefendCircuitBreaker }
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdResources, FallbackAction }
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.UpdateStats
+import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.{ CmdKeyStatsSnapshot, UpdateStats }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, Promise }
@@ -34,6 +34,10 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
     case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
       fallbackFuture(promise, callSync(msg))
+
+    case s: CmdKeyStatsSnapshot =>
+      // key has to exists at this time
+      msgKeyToConf.update(s.cmdKey.name, msgKeyToConf(s.cmdKey.name).copy(stats = Some(s)))
   }
 
   def fallbackFuture(promise: Promise[Any], res: Future[_]) =
@@ -63,7 +67,6 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     exec.onComplete {
       case Success(_) | Failure(_: CircuitBreakerOpenException) =>
         val t = System.currentTimeMillis() - startTime
-        log.debug("time for cmd {} was {} ms", msg.cmdKey.name, t)
         resources.statsActor ! UpdateStats(t)
       case _ =>
     }
@@ -87,21 +90,21 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
     val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
-    val resources = CmdResources(cb, cfg, dispatcherHolder, statsActor)
+    val resources = CmdResources(cb, cfg, dispatcherHolder, statsActor, stats = None)
     log.debug("initialize {} command resources with config {}", msgKey, cfg)
     resources
   }
 
   def statsActorForKey(cmdKey: DefendCommandKey) = {
     val cmdKeyName = cmdKey.name
-    context.actorOf(AkkaDefendCmdKeyStatsActor.props, s"stats-$cmdKeyName")
+    context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"stats-$cmdKeyName")
   }
 }
 
 object AkkaDefendActor {
 
   private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
-    dispatcherHolder: DispatcherHolder, statsActor: ActorRef)
+    dispatcherHolder: DispatcherHolder, statsActor: ActorRef, stats: Option[CmdKeyStatsSnapshot])
 
   private[internal] case object GetKeyConfigs
 
