@@ -1,14 +1,16 @@
 package net.atinu.akka.defender.internal
 
-import akka.actor.{ ActorRef, Actor, ActorLogging, Props }
+import java.util.concurrent.TimeoutException
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.pattern.{ CircuitBreakerOpenException, AkkaDefendCircuitBreaker }
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdResources, FallbackAction }
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.{ CmdKeyStatsSnapshot, UpdateStats }
+import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, Promise }
-import scala.util.{ Try, Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -62,16 +64,27 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   def execFlow(msg: NamedCommand[_], resources: CmdResources, execute: => Future[Any]): Future[Any] = {
-    val startTime = System.currentTimeMillis();
     val exec = resources.circuitBreaker.withCircuitBreaker(execute)
-    exec.onComplete {
-      case Success(_) | Failure(_: CircuitBreakerOpenException) =>
-        val t = System.currentTimeMillis() - startTime
-        resources.statsActor ! UpdateStats(t)
-      case _ =>
-    }
+    updateCallStats(resources, exec)
     val execOrFallback = fallback(msg, exec)
     execOrFallback
+  }
+
+  def updateCallStats(resources: CmdResources, exec: Future[Any]): Unit = {
+    val startTime = System.currentTimeMillis()
+    exec.onComplete {
+      case Success(_) =>
+        val t = System.currentTimeMillis() - startTime
+        resources.statsActor ! ReportSuccCall(t)
+      case Failure(v) =>
+        val t = System.currentTimeMillis() - startTime
+        val msg = v match {
+          case e: TimeoutException => ReportTimeoutCall(t)
+          case e: CircuitBreakerOpenException => ReportCircuitBreakerOpenCall
+          case e => ReportErrorCall(t)
+        }
+        resources.statsActor ! msg
+    }
   }
 
   def fallback(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
