@@ -1,14 +1,14 @@
 package net.atinu.akka.defender.internal
 
-import akka.actor.{ ActorLogging, Props, Actor }
+import akka.actor.{ Actor, ActorLogging, Props }
 import com.google.common.collect.EvictingQueue
 import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import org.HdrHistogram.Histogram
 
 class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with ActorLogging {
-  import scala.concurrent.duration._
   import context.dispatcher
+  import scala.concurrent.duration._
 
   val execTime = new Histogram(600000L, 2)
   val rollingStats = EvictingQueue.create[StatsBucket](10)
@@ -60,11 +60,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
     val sum = new StatsBucket()
     val rollingStatsIt = rollingStats.iterator()
     while (rollingStatsIt.hasNext) {
-      val stats = rollingStatsIt.next()
-      sum.succ_+(stats.succ)
-      sum.err_+(stats.err)
-      sum.cb_+(stats.cb)
-      sum.to_+(stats.to)
+      sum += rollingStatsIt.next()
     }
     sum.toCallStats
   }
@@ -93,7 +89,15 @@ object AkkaDefendCmdKeyStatsActor {
   case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpenCall)
   case class ReportTimeoutCall(execTimeMs: Long) extends MetricReportCommand(TimeoutCall)
 
-  case class CallStats(succCount: Long, errorCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long)
+  case class CallStats(succCount: Long, errorCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long) {
+
+    val errorPercent = {
+      val ec = errorCount + ciruitBreakerOpenCount + timeoutCount
+      val tc = succCount + ec
+      if (tc > 0) (ec.toDouble / tc.toDouble * 100).toInt
+      else 0
+    }
+  }
 
   case class CmdKeyStatsSnapshot(cmdKey: DefendCommandKey, median: Long, p95Time: Long, p99Time: Long, callStats: CallStats) {
 
@@ -106,7 +110,8 @@ object AkkaDefendCmdKeyStatsActor {
         "countSucc" -> callStats.succCount,
         "countError" -> callStats.errorCount,
         "countCbOpen" -> callStats.ciruitBreakerOpenCount,
-        "countTimeout" -> callStats.timeoutCount
+        "countTimeout" -> callStats.timeoutCount,
+        "errorPercent" -> callStats.errorPercent
       ).mkString(", ")
     }
   }
@@ -129,6 +134,13 @@ object AkkaDefendCmdKeyStatsActor {
     def err_+(v: Long) = err += v
     def cb_+(v: Long) = cb += v
     def to_+(v: Long) = to += v
+
+    def +=(bucket: StatsBucket) = {
+      succ += bucket.succ
+      err += bucket.err
+      cb += bucket.cb
+      to += bucket.to
+    }
 
     def toCallStats = CallStats(succ, err, cb, to)
   }
