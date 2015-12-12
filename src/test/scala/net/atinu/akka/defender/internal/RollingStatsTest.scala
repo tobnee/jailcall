@@ -1,6 +1,6 @@
 package net.atinu.akka.defender.internal
 
-import net.atinu.akka.defender.internal.util.{ CallStats, RollingStats$ }
+import net.atinu.akka.defender.internal.util.{ RollingStats, CallStats }
 import org.scalatest.{ Matchers, FunSuite }
 
 class RollingStatsTest extends FunSuite with Matchers {

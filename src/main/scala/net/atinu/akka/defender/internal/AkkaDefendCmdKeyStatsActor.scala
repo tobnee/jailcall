@@ -3,16 +3,16 @@ package net.atinu.akka.defender.internal
 import akka.actor.{ Actor, ActorLogging, Props }
 import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.util.{RollingStats, CallStats}
+import net.atinu.akka.defender.internal.util.{ RollingStats, CallStats }
 import org.HdrHistogram.Histogram
 
 class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with ActorLogging {
   import context.dispatcher
-
   import scala.concurrent.duration._
 
-  val execTime = new Histogram(600000L, 2)
+  val execTime = new Histogram(600000L, 1)
   val rollingStats = RollingStats.withSize(10)
+  var updateSinceLastSnapshot = false
 
   val interval = 1.second
   context.system.scheduler.schedule(interval, interval, self, RollStats)
@@ -27,12 +27,13 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
     case r: ReportTimeoutCall =>
       updateStats(r.execTimeMs, r.metricType)
     case RollStats =>
-      rollAndNotify()
+      rollAndNotifyIfUpdated()
   }
 
   def updateStats(timeMs: Long, metricType: MetricType): Unit = {
     execTime.recordValue(timeMs)
     updateStats(metricType)
+    updateSinceLastSnapshot = true
   }
 
   def updateStats(metricType: MetricType): Unit = {
@@ -44,8 +45,11 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
     }
   }
 
-  def rollAndNotify() = {
-    publishSnapshotUpdate()
+  def rollAndNotifyIfUpdated() = {
+    if (updateSinceLastSnapshot) {
+      publishSnapshotUpdate()
+      updateSinceLastSnapshot = false
+    }
     rollingStats.roll()
   }
 
