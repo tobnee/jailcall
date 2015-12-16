@@ -1,23 +1,12 @@
 package net.atinu.akka.defender.internal
 
-import java.util.concurrent.TimeoutException
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
-import akka.pattern.{ CircuitBreakerOpenException, AkkaDefendCircuitBreaker }
 import net.atinu.akka.defender._
-import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdResources, FallbackAction }
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success, Try }
+import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
-  import akka.pattern.pipe
-  import context.dispatcher
-
-  val msgKeyToConf = collection.mutable.Map.empty[String, CmdResources]
+  val msgKeyToExecutor = collection.mutable.Map.empty[String, ActorRef]
 
   val rootConfig = context.system.settings.config
   val cbConfigBuilder = new MsgConfigBuilder(rootConfig)
@@ -25,106 +14,30 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   val dispatcherLookup = new DispatcherLookup(context.system.dispatchers)
 
   def receive = {
-    case msg: DefendExecution[_] =>
-      callAsync(msg) pipeTo sender()
+    case CreateCmdExecutor(cmdKey) =>
+      sender() ! CmdExecutorCreated(cmdKey, executorFor(cmdKey))
 
-    case msg: SyncDefendExecution[_] =>
-      callSync(msg) pipeTo sender()
-
-    case FallbackAction(promise, msg: DefendExecution[_]) =>
-      fallbackFuture(promise, callAsync(msg))
-
-    case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
-      fallbackFuture(promise, callSync(msg))
-
-    case s: CmdKeyStatsSnapshot =>
-      // key has to exists at this time
-      msgKeyToConf.update(s.cmdKey.name, msgKeyToConf(s.cmdKey.name).copy(stats = Some(s)))
+    case msg: NamedCommand[_] =>
+      executorFor(msg.cmdKey) forward msg
   }
 
-  def fallbackFuture(promise: Promise[Any], res: Future[_]) =
-    promise.completeWith(res)
-
-  def resourcesFor(msg: NamedCommand[_]): CmdResources = {
-    msgKeyToConf.getOrElseUpdate(msg.cmdKey.name, buildCommandResources(msg.cmdKey))
+  def executorFor(cmdKey: DefendCommandKey): ActorRef = {
+    msgKeyToExecutor.getOrElseUpdate(cmdKey.name, buildCmdActor(cmdKey))
   }
 
-  def callSync(msg: SyncDefendExecution[_]): Future[Any] = {
-    val resources = resourcesFor(msg)
-    val dispatcherHolder = resources.dispatcherHolder
-    if (dispatcherHolder.isDefault) {
-      log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
-    }
-    execFlow(msg, resources, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
-  }
-
-  def callAsync(msg: DefendExecution[_]): Future[Any] = {
-    val resources = resourcesFor(msg)
-    execFlow(msg, resources, msg.execute)
-  }
-
-  def execFlow(msg: NamedCommand[_], resources: CmdResources, execute: => Future[Any]): Future[Any] = {
-    val exec = resources.circuitBreaker.withCircuitBreaker(execute)
-    updateCallStats(resources, exec)
-    val execOrFallback = fallback(msg, exec)
-    execOrFallback
-  }
-
-  def updateCallStats(resources: CmdResources, exec: Future[Any]): Unit = {
-    val startTime = System.currentTimeMillis()
-    exec.onComplete {
-      case Success(_) =>
-        val t = System.currentTimeMillis() - startTime
-        resources.statsActor ! ReportSuccCall(t)
-      case Failure(v) =>
-        val t = System.currentTimeMillis() - startTime
-        val msg = v match {
-          case e: TimeoutException => ReportTimeoutCall(t)
-          case e: CircuitBreakerOpenException => ReportCircuitBreakerOpenCall
-          case e => ReportErrorCall(t)
-        }
-        resources.statsActor ! msg
-    }
-  }
-
-  def fallback(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
-    case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
-    case dynamic: CmdFallback[_] =>
-      exec.fallbackTo {
-        val fallbackPromise = Promise.apply[Any]()
-        self ! FallbackAction(fallbackPromise, dynamic.fallback)
-        fallbackPromise.future
-      }
-    case _ => exec
-  }
-
-  private def buildCommandResources(msgKey: DefendCommandKey): CmdResources = {
-    val statsActor = statsActorForKey(msgKey)
+  private def buildCmdActor(msgKey: DefendCommandKey): ActorRef = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
     val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
     val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
-    val resources = CmdResources(cb, cfg, dispatcherHolder, statsActor, stats = None)
-    log.debug("initialize {} command resources with config {}", msgKey, cfg)
-    resources
-  }
-
-  def statsActorForKey(cmdKey: DefendCommandKey) = {
-    val cmdKeyName = cmdKey.name
-    context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"stats-$cmdKeyName")
+    context.actorOf(AkkaDefendExecutor.props(msgKey, cb, cfg, dispatcherHolder))
   }
 }
 
 object AkkaDefendActor {
 
-  private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
-    dispatcherHolder: DispatcherHolder, statsActor: ActorRef, stats: Option[CmdKeyStatsSnapshot])
-
-  private[internal] case object GetKeyConfigs
-
-  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: NamedCommand[_])
-
-  private[internal] case class CmdMetrics(name: DefendCommandKey)
-
   def props = Props(new AkkaDefendActor)
 
+  case class CreateCmdExecutor(cmdKey: DefendCommandKey)
+
+  case class CmdExecutorCreated(cmdKey: DefendCommandKey, executor: ActorRef)
 }
