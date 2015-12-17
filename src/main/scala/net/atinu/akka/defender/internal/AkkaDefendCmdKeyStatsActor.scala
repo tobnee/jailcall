@@ -3,11 +3,12 @@ package net.atinu.akka.defender.internal
 import akka.actor.{ Actor, ActorLogging, Props }
 import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.util.{ RollingStats, CallStats }
+import net.atinu.akka.defender.internal.util.RollingStats
 import org.HdrHistogram.Histogram
 
 class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with ActorLogging {
   import context.dispatcher
+
   import scala.concurrent.duration._
 
   val execTime = new Histogram(600000L, 1)
@@ -55,7 +56,6 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
 
   def publishSnapshotUpdate(): Unit = {
     val stats = CmdKeyStatsSnapshot(
-      cmdKey,
       execTime.getValueAtPercentile(50),
       execTime.getValueAtPercentile(95),
       execTime.getValueAtPercentile(99),
@@ -75,23 +75,6 @@ object AkkaDefendCmdKeyStatsActor {
   case class ReportErrorCall(execTimeMs: Long) extends MetricReportCommand(ErrCall)
   case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpenCall)
   case class ReportTimeoutCall(execTimeMs: Long) extends MetricReportCommand(TimeoutCall)
-
-  case class CmdKeyStatsSnapshot(cmdKey: DefendCommandKey, median: Long, p95Time: Long, p99Time: Long, callStats: CallStats) {
-
-    override def toString = {
-      Vector(
-        "cmdKey" -> cmdKey.name,
-        "callMedian" -> median,
-        "callP95" -> p95Time,
-        "callP99" -> p99Time,
-        "countSucc" -> callStats.succCount,
-        "countError" -> callStats.errorCount,
-        "countCbOpen" -> callStats.ciruitBreakerOpenCount,
-        "countTimeout" -> callStats.timeoutCount,
-        "errorPercent" -> callStats.errorPercent
-      ).mkString(", ")
-    }
-  }
 
   sealed trait MetricType
   case object SuccCall extends MetricType

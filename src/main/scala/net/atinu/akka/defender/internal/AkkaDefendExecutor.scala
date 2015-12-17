@@ -22,7 +22,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   import scala.concurrent.duration._
 
   val statsActor: ActorRef = statsActorForKey(msgKey)
-  var stats: Option[CmdKeyStatsSnapshot] = None
+  var stats = CmdKeyStatsSnapshot.initial
 
   def receive = receiveClosed(isHalfOpen = false)
 
@@ -43,7 +43,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
     case snap: CmdKeyStatsSnapshot =>
       val errorCount = snap.callStats.timeoutCount
-      stats = Some(snap)
+      stats = snap
       if (errorCount >= cfg.cbConfig.maxFailures - 1) {
         openCircuitBreaker()
       }
@@ -65,7 +65,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       promise.completeWith(callBreak(calcRemaining(end)))
 
     case snap: CmdKeyStatsSnapshot => {
-      stats = Some(snap)
+      stats = snap
     }
   }
 

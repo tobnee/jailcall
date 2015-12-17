@@ -3,7 +3,6 @@ package net.atinu.akka.defender.internal
 import akka.actor.Status.Failure
 import akka.dispatch.MessageDispatcher
 import akka.pattern.CircuitBreakerOpenException
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.CmdKeyStatsSnapshot
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.akka.defender.internal.util.CallStats
 import net.atinu.akka.defender.util.ActorTest
@@ -23,7 +22,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
 
-    ref ! CmdKeyStatsSnapshot(commandKey, 0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
     ref ! DefendCommand.apply(key = "foo", Future.successful("a"))
     expectMsgPF() {
       case Failure(e) =>
@@ -38,7 +37,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(commandKey, 0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
@@ -58,7 +57,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(commandKey, 0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
