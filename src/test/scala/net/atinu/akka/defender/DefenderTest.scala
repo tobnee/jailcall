@@ -159,14 +159,14 @@ object DefenderTest {
         |      circuit-breaker {
         |        max-failures = 2,
         |        call-timeout = 200 millis,
-        |        reset-timeout = 2 minutes
+        |        reset-timeout = 1 seconds
         |      }
         |    }
         |    load-data-sync {
         |      circuit-breaker {
         |        max-failures = 2,
         |        call-timeout = 200 millis,
-        |        reset-timeout = 2 minutes
+        |        reset-timeout = 1 seconds
         |      }
         |      dispatcher = sync-call-dispatcher
         |    }

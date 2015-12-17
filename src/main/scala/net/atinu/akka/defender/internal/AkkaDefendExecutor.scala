@@ -2,19 +2,20 @@ package net.atinu.akka.defender.internal
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
+import akka.actor._
 import akka.defend.DefendBatchingExecutor
 import akka.pattern.CircuitBreakerOpenException
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.AkkaDefendExecutor.TryCloseCircuitBreaker
+import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
 
-class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder) extends Actor with ActorLogging {
+class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
+    extends Actor with ActorLogging with Stash {
 
   import akka.pattern.pipe
 
@@ -23,38 +24,34 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   val statsActor: ActorRef = statsActorForKey(msgKey)
   var stats: Option[CmdKeyStatsSnapshot] = None
 
-  def receive = receiveClosed
+  def receive = receiveClosed(isHalfOpen = false)
 
-  val receiveClosed: Receive = {
+  def receiveClosed(isHalfOpen: Boolean): Receive = {
     case msg: DefendExecution[_] =>
       import context.dispatcher
-      callAsync(msg) pipeTo sender()
+      callAsync(msg, isHalfOpen) pipeTo sender()
 
     case msg: SyncDefendExecution[_] =>
       import context.dispatcher
-      callSync(msg) pipeTo sender()
+      callSync(msg, isHalfOpen) pipeTo sender()
 
     case FallbackAction(promise, msg: DefendExecution[_]) =>
-      fallbackFuture(promise, callAsync(msg))
+      fallbackFuture(promise, callAsync(msg, isHalfOpen))
 
     case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
-      fallbackFuture(promise, callSync(msg))
+      fallbackFuture(promise, callSync(msg, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
-      log.info("got new stats data {}", snap.callStats.errorCount)
       val errorCount = snap.callStats.timeoutCount
       stats = Some(snap)
       if (errorCount >= cfg.cbConfig.maxFailures - 1) {
-        import context.dispatcher
-        log.info("open circuit breaker for {}", cfg.cbConfig.resetTimeout)
-        context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
-        context.become(receiveOpen(System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis))
+        openCircuitBreaker()
       }
   }
 
   def receiveOpen(end: Long): Receive = {
     case TryCloseCircuitBreaker =>
-      context.become(receiveClosed)
+      context.become(receiveClosed(isHalfOpen = true))
 
     case msg: DefendExecution[_] =>
       import context.dispatcher
@@ -72,6 +69,25 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
+  def receiveHalfOpen: Receive = {
+    case ClosingCircuitBreakerFailed =>
+      log.debug("circuit closed test call failed for {}", msgKey.name)
+      openCircuitBreaker()
+      unstashAll()
+    case ClosingCircuitBreakerSucceed =>
+      context.become(receiveClosed(isHalfOpen = false))
+      unstashAll()
+    case _ =>
+      stash()
+  }
+
+  def openCircuitBreaker(): Unit = {
+    import context.dispatcher
+    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.cbConfig.resetTimeout)
+    context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
+    context.become(receiveOpen(System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis))
+  }
+
   def calcRemaining(end: Long) = {
     val r = end - System.currentTimeMillis()
     if (end > 0) r.millis
@@ -81,21 +97,34 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def fallbackFuture(promise: Promise[Any], res: Future[_]) =
     promise.completeWith(res)
 
-  def callSync(msg: SyncDefendExecution[_]): Future[Any] = {
+  def callSync(msg: SyncDefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
     if (dispatcherHolder.isDefault) {
       log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
     }
-    execFlow(msg, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
+    execFlow(msg, breakOnSingleFailure, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: DefendExecution[_]): Future[Any] = {
-    execFlow(msg, msg.execute)
+  def callAsync(msg: DefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
+    execFlow(msg, breakOnSingleFailure, msg.execute)
   }
 
-  def execFlow(msg: NamedCommand[_], execute: => Future[Any]): Future[Any] = {
+  def execFlow(msg: NamedCommand[_], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
     val exec = callThrough(execute)
     updateCallStats(exec)
+    if (breakOnSingleFailure) waitForApproval(exec)
     fallbackIfDefined(msg, exec)
+  }
+
+  def waitForApproval(exec: Future[Any]) = {
+    log.debug("{} become half open", msgKey.name)
+    context.become(receiveHalfOpen)
+    import context.dispatcher
+    exec.onComplete {
+      case Success(v) =>
+        self ! ClosingCircuitBreakerSucceed
+      case Failure(e) =>
+        self ! ClosingCircuitBreakerFailed
+    }
   }
 
   // adapted based on the akka circuit breaker implementation
@@ -167,6 +196,8 @@ object AkkaDefendExecutor {
     Props(new AkkaDefendExecutor(msgKey, cfg, dispatcherHolder))
 
   private[internal] case object TryCloseCircuitBreaker
+  private[internal] case object ClosingCircuitBreakerFailed
+  private[internal] case object ClosingCircuitBreakerSucceed
 
   private[internal] object sameThreadExecutionContext extends ExecutionContext with DefendBatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
