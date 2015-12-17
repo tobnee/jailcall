@@ -4,7 +4,7 @@ package object util {
 
   case class CallStats(succCount: Long, errorCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long) {
 
-    val errorPercent = {
+    val errorPercent: Int = {
       val ec = errorCount + ciruitBreakerOpenCount + timeoutCount
       val tc = succCount + ec
       if (tc > 0) (ec.toDouble / tc.toDouble * 100).toInt

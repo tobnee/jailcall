@@ -27,9 +27,8 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   private def buildCmdActor(msgKey: DefendCommandKey): ActorRef = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
-    val cb = cbBuilder.createCb(msgKey, cfg.cbConfig, log)
     val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
-    context.actorOf(AkkaDefendExecutor.props(msgKey, cb, cfg, dispatcherHolder))
+    context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, dispatcherHolder))
   }
 }
 

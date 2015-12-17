@@ -14,7 +14,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
   val rollingStats = RollingStats.withSize(10)
   var updateSinceLastSnapshot = false
 
-  val interval = 1.second
+  val interval = 20.millis
   context.system.scheduler.schedule(interval, interval, self, RollStats)
 
   def receive = {
