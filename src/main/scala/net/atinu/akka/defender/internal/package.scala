@@ -25,7 +25,7 @@ package object internal {
         "callP95" -> p95Time,
         "callP99" -> p99Time,
         "countSucc" -> callStats.succCount,
-        "countError" -> callStats.errorCount,
+        "countError" -> callStats.failureCount,
         "countCbOpen" -> callStats.ciruitBreakerOpenCount,
         "countTimeout" -> callStats.timeoutCount,
         "errorPercent" -> callStats.errorPercent

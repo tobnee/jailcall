@@ -13,7 +13,7 @@ class RollingStatsTest extends FunSuite with Matchers {
 
     val sum: CallStats = rs.sum
     sum.succCount should equal(2)
-    sum.errorCount should equal(1)
+    sum.failureCount should equal(1)
   }
 
   test("sum roll") {
@@ -24,7 +24,7 @@ class RollingStatsTest extends FunSuite with Matchers {
 
     val sum: CallStats = rs.sum
     sum.succCount should equal(1)
-    sum.errorCount should equal(1)
+    sum.failureCount should equal(1)
   }
 
   test("sum roll over") {
@@ -39,14 +39,14 @@ class RollingStatsTest extends FunSuite with Matchers {
     rs.roll() // pos 2
 
     rs.sum.succCount should equal(2)
-    rs.sum.errorCount should equal(1)
+    rs.sum.failureCount should equal(1)
 
     rs.recordCbOpen()
     rs.roll() // pos 0
 
     rs.recordCbOpen()
     rs.sum.succCount should equal(1)
-    rs.sum.errorCount should equal(1)
+    rs.sum.failureCount should equal(1)
     rs.sum.ciruitBreakerOpenCount should equal(2)
   }
 }

@@ -32,7 +32,7 @@ class RollingStats(val size: Int) {
   }
 
   def recordError(): RollingStats = {
-    current.err_++
+    current.fail_++
     this
   }
 
