@@ -1,7 +1,6 @@
 package net.atinu.akka.defender
 
 import akka.actor.Status.Failure
-import akka.pattern.CircuitBreakerOpenException
 import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.util.ActorTest
 
@@ -24,42 +23,6 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
       def execute = Future.failed(err)
     })
     expectMsg(Failure(err))
-  }
-
-  test("the cb gets called if the failure limit is hit") {
-    val cmd = new DefendExecution[String] {
-      val cmdKey = "load-data".asKey
-      // check why apply will result in open cb but no cb exception
-      import scala.concurrent.ExecutionContext.Implicits.global
-      def execute = Future {
-        Thread.sleep(2000)
-        "foo1"
-      }
-    }
-
-    val defender = AkkaDefender(system).defender
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[scala.concurrent.TimeoutException]
-    }
-
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) => e shouldBe a[scala.concurrent.TimeoutException]
-    }
-
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
-    }
-
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
-    }
   }
 
   test("A static fallback is used in case of failure") {
@@ -118,35 +81,6 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd2)
     expectMsg("yes3")
-  }
-
-  test("the cb gets called if the failure limit is hit (sync)") {
-    val cmd = new SyncDefendExecution[String] {
-      val cmdKey = "load-data-sync".asKey
-      // check why apply will result in open cb but no cb exception
-      def execute = {
-        Thread.sleep(1000)
-        "foo1"
-      }
-    }
-
-    val defender = AkkaDefender(system).defender
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[scala.concurrent.TimeoutException]
-    }
-
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) => e shouldBe a[scala.concurrent.TimeoutException]
-    }
-    defender.executeToRef(cmd)
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
-    }
-    expectNoMsg()
   }
 }
 

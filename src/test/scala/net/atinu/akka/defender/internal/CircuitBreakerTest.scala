@@ -15,6 +15,32 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
 
   import scala.concurrent.duration._
 
+  test("no break if call limit is to low") {
+    val thisCfg = cfg(2, 500, 1000)
+    val commandKey = DefendCommandKey("nfoo")
+    val ref = system.actorOf(
+      AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
+    )
+
+    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+      CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1))
+    ref ! DefendCommand.apply(key = "nfoo", Future.successful("na"))
+    expectMsg("na")
+  }
+
+  test("no break if error count is to low") {
+    val thisCfg = cfg(2, 500, 1000)
+    val commandKey = DefendCommandKey("nfoo")
+    val ref = system.actorOf(
+      AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
+    )
+
+    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+      CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1))
+    ref ! DefendCommand.apply(key = "nfoo", Future.successful("na"))
+    expectMsg("na")
+  }
+
   test("cb break") {
     val thisCfg = cfg(2, 500, 1000)
     val commandKey = DefendCommandKey("foo")
@@ -22,7 +48,8 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
 
-    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
     ref ! DefendCommand.apply(key = "foo", Future.successful("a"))
     expectMsgPF() {
       case Failure(e) =>
@@ -37,7 +64,8 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
@@ -57,7 +85,8 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 3))
+    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>

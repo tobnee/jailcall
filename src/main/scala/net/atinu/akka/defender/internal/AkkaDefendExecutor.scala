@@ -9,6 +9,7 @@ import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
+import net.atinu.akka.defender.internal.util.CallStats
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -42,11 +43,8 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       fallbackFuture(promise, callSync(msg, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
-      val errorCount = snap.callStats.timeoutCount
       stats = snap
-      if (errorCount >= cfg.cbConfig.maxFailures - 1) {
-        openCircuitBreaker()
-      }
+      openCircuitBreakerOnFailureLimit(snap.callStats)
   }
 
   def receiveOpen(end: Long): Receive = {
@@ -196,6 +194,16 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def statsActorForKey(cmdKey: DefendCommandKey) = {
     val cmdKeyName = cmdKey.name
     context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"stats-$cmdKeyName")
+  }
+
+  def openCircuitBreakerOnFailureLimit(callStats: CallStats): Unit = {
+    // rolling call count has to be significant enough
+    // to consider opening the CB
+    if (callStats.totalCount >= 20) {
+      if (callStats.errorPercent >= 50) {
+        openCircuitBreaker()
+      }
+    }
   }
 
 }
