@@ -5,17 +5,16 @@ import net.atinu.akka.defender.DefendCommandKey
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import net.atinu.akka.defender.internal.util.RollingStats
 import org.HdrHistogram.Histogram
+import scala.concurrent.duration._
 
 class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with ActorLogging {
   import context.dispatcher
-
-  import scala.concurrent.duration._
 
   val execTime = new Histogram(600000L, 1)
   val rollingStats = RollingStats.withSize(10)
   var updateSinceLastSnapshot = false
 
-  val interval = 20.millis
+  val interval = 1.second
   context.system.scheduler.schedule(interval, interval, self, RollStats)
 
   def receive = {
