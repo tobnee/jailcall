@@ -109,15 +109,19 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   def execFlow(msg: NamedCommand[_], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
+    if (breakOnSingleFailure) waitForApproval()
     val exec = callThrough(execute)
+    if (breakOnSingleFailure) checkForSingleFailure(exec)
     updateCallStats(exec)
-    if (breakOnSingleFailure) waitForApproval(exec)
     fallbackIfDefined(msg, exec)
   }
 
-  def waitForApproval(exec: Future[Any]) = {
+  def waitForApproval() = {
     log.debug("{} become half open", msgKey.name)
     context.become(receiveHalfOpen)
+  }
+
+  def checkForSingleFailure(exec: Future[Any]): Unit = {
     import context.dispatcher
     exec.onComplete {
       case Success(v) =>
