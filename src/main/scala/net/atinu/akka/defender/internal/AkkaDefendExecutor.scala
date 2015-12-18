@@ -14,13 +14,12 @@ import net.atinu.akka.defender.internal.util.CallStats
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
+import scala.concurrent.duration._
 
 class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
     extends Actor with ActorLogging with Stash {
 
   import akka.pattern.pipe
-
-  import scala.concurrent.duration._
 
   val statsActor: ActorRef = statsActorForKey(msgKey)
   var stats = CmdKeyStatsSnapshot.initial
@@ -53,14 +52,14 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
     case msg: DefendExecution[_] =>
       import context.dispatcher
-      callBreak(calcRemaining(end)) pipeTo sender()
+      callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
     case msg: SyncDefendExecution[_] =>
       import context.dispatcher
-      callBreak(calcRemaining(end)) pipeTo sender()
+      callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
     case FallbackAction(promise, _) =>
-      promise.completeWith(callBreak(calcRemaining(end)))
+      promise.completeWith(callBreak(calcCircuitBreakerOpenRemaining(end)))
 
     case snap: CmdKeyStatsSnapshot => {
       stats = snap
@@ -77,19 +76,6 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       unstashAll()
     case _ =>
       stash()
-  }
-
-  def openCircuitBreaker(): Unit = {
-    import context.dispatcher
-    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.cbConfig.resetTimeout)
-    context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
-    context.become(receiveOpen(System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis))
-  }
-
-  def calcRemaining(end: Long) = {
-    val r = end - System.currentTimeMillis()
-    if (end > 0) r.millis
-    else 0.millis
   }
 
   def fallbackFuture(promise: Promise[Any], res: Future[_]) =
@@ -112,21 +98,6 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     updateCallStats(startTime, exec)
     if (breakOnSingleFailure) checkForSingleFailure(exec)
     fallbackIfDefined(msg, exec)
-  }
-
-  def waitForApproval() = {
-    log.debug("{} become half open", msgKey.name)
-    context.become(receiveHalfOpen)
-  }
-
-  def checkForSingleFailure(exec: Future[Any]): Unit = {
-    import context.dispatcher
-    exec.onComplete {
-      case Success(v) =>
-        self ! ClosingCircuitBreakerSucceed
-      case Failure(e) =>
-        self ! ClosingCircuitBreakerFailed
-    }
   }
 
   // adapted based on the akka circuit breaker implementation
@@ -163,6 +134,17 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def callBreak[T](remainingDuration: FiniteDuration): Future[T] =
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
 
+  def fallbackIfDefined(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
+    case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
+    case dynamic: CmdFallback[_] =>
+      exec.fallbackTo {
+        val fallbackPromise = Promise.apply[Any]()
+        self ! FallbackAction(fallbackPromise, dynamic.fallback)
+        fallbackPromise.future
+      }
+    case _ => exec
+  }
+
   def updateCallStats(startTime: Long, exec: Future[Any]): Unit = {
     import context.dispatcher
     exec.onComplete {
@@ -180,20 +162,24 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def fallbackIfDefined(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
-    case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
-    case dynamic: CmdFallback[_] =>
-      exec.fallbackTo {
-        val fallbackPromise = Promise.apply[Any]()
-        self ! FallbackAction(fallbackPromise, dynamic.fallback)
-        fallbackPromise.future
-      }
-    case _ => exec
-  }
-
   def statsActorForKey(cmdKey: DefendCommandKey) = {
     val cmdKeyName = cmdKey.name
     context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"stats-$cmdKeyName")
+  }
+
+  def waitForApproval() = {
+    log.debug("{} become half open", msgKey.name)
+    context.become(receiveHalfOpen)
+  }
+
+  def checkForSingleFailure(exec: Future[Any]): Unit = {
+    import context.dispatcher
+    exec.onComplete {
+      case Success(v) =>
+        self ! ClosingCircuitBreakerSucceed
+      case Failure(e) =>
+        self ! ClosingCircuitBreakerFailed
+    }
   }
 
   def openCircuitBreakerOnFailureLimit(callStats: CallStats): Unit = {
@@ -204,6 +190,19 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
         openCircuitBreaker()
       }
     }
+  }
+
+  def openCircuitBreaker(): Unit = {
+    import context.dispatcher
+    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.cbConfig.resetTimeout)
+    context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
+    context.become(receiveOpen(System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis))
+  }
+
+  def calcCircuitBreakerOpenRemaining(end: Long) = {
+    val r = end - System.currentTimeMillis()
+    if (end > 0) r.millis
+    else 0.millis
   }
 
 }
