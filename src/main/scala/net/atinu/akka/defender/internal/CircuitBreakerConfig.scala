@@ -14,12 +14,12 @@ import scala.concurrent.duration._
 
 private[internal] case class MsgConfig(cbConfig: CircuitBreakerConfig, dispatcherName: Option[String])
 
-private[internal] case class CircuitBreakerConfig(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
+private[internal] case class CircuitBreakerConfig(requestVolumeThreshold: Int, minFailurePercent: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
   def loadConfigForKey(key: DefendCommandKey): MsgConfig = {
-    MsgConfig(loadCbConfig(key), loadDispatcherConfig(key))
+    MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key))
   }
 
   private def loadDispatcherConfig(key: DefendCommandKey) = {
@@ -30,7 +30,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     loadCbConfigInPath("defender.circuit-breaker.default")
       .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
-  private def loadCbConfig(key: DefendCommandKey): CircuitBreakerConfig =
+  private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
     loadCbConfigInPath(cmdKeyCBConfigPath(key)).getOrElse(defaultCbConfig)
 
   private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
@@ -41,7 +41,8 @@ private[internal] class MsgConfigBuilder(config: Config) {
     val cfg = loadConfig(path)
     cfg.map { cbConfig =>
       CircuitBreakerConfig(
-        maxFailures = cbConfig.getInt("max-failures"),
+        requestVolumeThreshold = cbConfig.getInt("request-volume-threshold"),
+        minFailurePercent = cbConfig.getInt("min-failure-percent"),
         callTimeout = loadFiniteDuration(cbConfig, "call-timeout", TimeUnit.MILLISECONDS),
         resetTimeout = loadFiniteDuration(cbConfig, "reset-timeout", TimeUnit.SECONDS)
       )
@@ -70,7 +71,7 @@ private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
   private def createCbFromConfig(msgKey: DefendCommandKey, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
     AkkaDefendCircuitBreaker(
       scheduler,
-      maxFailures = cbConfig.maxFailures,
+      maxFailures = cbConfig.minFailurePercent,
       callTimeout = cbConfig.callTimeout,
       resetTimeout = cbConfig.resetTimeout
     )

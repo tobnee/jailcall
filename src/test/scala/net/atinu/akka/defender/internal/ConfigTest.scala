@@ -15,10 +15,11 @@ class ConfigTest extends FunSuite with Matchers {
         |  command {
         |    load-data {
         |      circuit-breaker {
-        |        max-failures = 11,
-        |        call-timeout = 3 seconds,
-        |        reset-timeout = 2 minutes
-        |      }
+        |       request-volume-threshold = 21,
+        |       min-failure-percent = 60,
+        |       call-timeout = 3 seconds,
+        |       reset-timeout = 2 minutes,
+        |      },
         |      dispatcher = "foo"
         |    }
         |  }
@@ -40,13 +41,13 @@ class ConfigTest extends FunSuite with Matchers {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(refCfg)
     val defaultCbConfig = builder.loadConfigForKey("foo".asKey)
-    defaultCbConfig.cbConfig should equal(CircuitBreakerConfig(10, 2.seconds, 1.minute))
+    defaultCbConfig.cbConfig should equal(CircuitBreakerConfig(20, 50, 1.second, 5.seconds))
   }
 
   test("load a custom config if specified") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-data".asKey).cbConfig should equal(CircuitBreakerConfig(11, 3.seconds, 2.minutes))
+    builder.loadConfigForKey("load-data".asKey).cbConfig should equal(CircuitBreakerConfig(21, 60, 3.seconds, 2.minutes))
   }
 
   test("load a dispatcher if specified") {

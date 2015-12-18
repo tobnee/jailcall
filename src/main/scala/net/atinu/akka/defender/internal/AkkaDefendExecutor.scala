@@ -111,14 +111,14 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       } catch { case NonFatal(t) ⇒ (time, Future.failed(t)) }
     }
 
-    if (cfg.cbConfig.callTimeout == Duration.Zero) {
+    val callTimeout = cfg.cbConfig.callTimeout
+    if (callTimeout == Duration.Zero) {
       materialize(body)
     } else {
       val p = Promise[T]()
-
       implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
 
-      val timeout = context.system.scheduler.scheduleOnce(cfg.cbConfig.callTimeout) {
+      val timeout = context.system.scheduler.scheduleOnce(callTimeout) {
         p tryCompleteWith AkkaDefendExecutor.timeoutFuture
       }
 
@@ -185,8 +185,9 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def openCircuitBreakerOnFailureLimit(callStats: CallStats): Unit = {
     // rolling call count has to be significant enough
     // to consider opening the CB
-    if (callStats.totalCount >= 20) {
-      if (callStats.errorPercent >= 50) {
+    val cbConfig = cfg.cbConfig
+    if (callStats.totalCount >= cbConfig.requestVolumeThreshold) {
+      if (callStats.errorPercent >= cbConfig.minFailurePercent) {
         openCircuitBreaker()
       }
     }
@@ -196,7 +197,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     import context.dispatcher
     log.debug("{} open circuit breaker for {}", msgKey.name, cfg.cbConfig.resetTimeout)
     context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
-    context.become(receiveOpen(System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis))
+    context.become(receiveOpen(calcCircuitBreakerEndTime))
+  }
+
+  def calcCircuitBreakerEndTime: Long = {
+    System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis
   }
 
   def calcCircuitBreakerOpenRemaining(end: Long) = {
