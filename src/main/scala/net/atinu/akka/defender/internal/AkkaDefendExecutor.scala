@@ -110,9 +110,9 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def execFlow(msg: NamedCommand[_], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
     if (breakOnSingleFailure) waitForApproval()
-    val exec = callThrough(execute)
+    val (startTime, exec) = callThrough(execute)
+    updateCallStats(startTime, exec)
     if (breakOnSingleFailure) checkForSingleFailure(exec)
-    updateCallStats(exec)
     fallbackIfDefined(msg, exec)
   }
 
@@ -132,9 +132,15 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   // adapted based on the akka circuit breaker implementation
-  def callThrough[T](body: ⇒ Future[T]): Future[T] = {
+  def callThrough[T](body: ⇒ Future[T]): (Long, Future[T]) = {
 
-    def materialize[U](value: ⇒ Future[U]): Future[U] = try value catch { case NonFatal(t) ⇒ Future.failed(t) }
+    def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
+      var time = 0L
+      try {
+        time = System.currentTimeMillis()
+        (time, value)
+      } catch { case NonFatal(t) ⇒ (time, Future.failed(t)) }
+    }
 
     if (cfg.cbConfig.callTimeout == Duration.Zero) {
       materialize(body)
@@ -147,20 +153,20 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
         p tryCompleteWith AkkaDefendExecutor.timeoutFuture
       }
 
-      materialize(body).onComplete { result ⇒
+      val (t, f) = materialize(body)
+      f.onComplete { result ⇒
         p tryComplete result
         timeout.cancel
       }
-      p.future
+      (t, p.future)
     }
   }
 
   def callBreak[T](remainingDuration: FiniteDuration): Future[T] =
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
 
-  def updateCallStats(exec: Future[Any]): Unit = {
+  def updateCallStats(startTime: Long, exec: Future[Any]): Unit = {
     import context.dispatcher
-    val startTime = System.currentTimeMillis()
     exec.onComplete {
       case Success(_) =>
         val t = System.currentTimeMillis() - startTime
