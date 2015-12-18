@@ -9,7 +9,7 @@ import scala.concurrent.Future
 class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
 
   test("the result of a future is executed and returned") {
-    AkkaDefender(system).defender.executeToRef(new DefendExecution[String] {
+    AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] {
       def cmdKey = DefendCommandKey("a")
       def execute: Future[String] = Future.successful("succFuture")
     })
@@ -18,7 +18,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
 
   test("the result of a failed future is a failure message") {
     val err = new scala.IllegalArgumentException("foo")
-    AkkaDefender(system).defender.executeToRef(new DefendExecution[String] {
+    AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] {
       def cmdKey = DefendCommandKey("a")
       def execute = Future.failed(err)
     })
@@ -28,7 +28,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
   test("A static fallback is used in case of failure") {
     val err = new scala.IllegalArgumentException("foo1")
 
-    val cmd = new DefendExecution[String] with StaticFallback[String] {
+    val cmd = new AsyncDefendExecution[String] with StaticFallback[String] {
       def cmdKey = "load-data-0".asKey
       def execute = Future.failed(err)
       def fallback: String = "yey1"

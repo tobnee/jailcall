@@ -27,7 +27,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case msg: DefendExecution[_] =>
+    case msg: AsyncDefendExecution[_] =>
       import context.dispatcher
       callAsync(msg, isHalfOpen) pipeTo sender()
 
@@ -35,7 +35,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       import context.dispatcher
       callSync(msg, isHalfOpen) pipeTo sender()
 
-    case FallbackAction(promise, msg: DefendExecution[_]) =>
+    case FallbackAction(promise, msg: AsyncDefendExecution[_]) =>
       fallbackFuture(promise, callAsync(msg, isHalfOpen))
 
     case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
@@ -51,10 +51,6 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       context.become(receiveClosed(isHalfOpen = true))
 
     case msg: DefendExecution[_] =>
-      import context.dispatcher
-      callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
-
-    case msg: SyncDefendExecution[_] =>
       import context.dispatcher
       callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
@@ -88,7 +84,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     execFlow(msg, breakOnSingleFailure, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: DefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
+  def callAsync(msg: AsyncDefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
     execFlow(msg, breakOnSingleFailure, msg.execute)
   }
 

@@ -12,14 +12,14 @@ trait DefaultCommandNaming[T] extends NamedCommand[T] {
 
 object DefendCommand {
 
-  def apply[T](key: String, exec: => Future[T]): DefendExecution[T] = new DefendExecution[T] {
+  def apply[T](key: String, exec: => Future[T]): AsyncDefendExecution[T] = new AsyncDefendExecution[T] {
     def cmdKey = key.asKey
 
     def execute = exec
   }
 
-  def applyWithStaticFallback[T](key: String, exec: => Future[T], fb: => T): DefendExecution[T] with StaticFallback[T] =
-    new DefendExecution[T] with StaticFallback[T] {
+  def applyWithStaticFallback[T](key: String, exec: => Future[T], fb: => T): AsyncDefendExecution[T] with StaticFallback[T] =
+    new AsyncDefendExecution[T] with StaticFallback[T] {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -27,8 +27,8 @@ object DefendCommand {
       def fallback = fb
     }
 
-  def applyWithCmdFallback[T](key: String, exec: => Future[T], fb: => NamedCommand[T]): DefendExecution[T] with CmdFallback[T] =
-    new DefendExecution[T] with CmdFallback[T] {
+  def applyWithCmdFallback[T](key: String, exec: => Future[T], fb: => NamedCommand[T]): AsyncDefendExecution[T] with CmdFallback[T] =
+    new AsyncDefendExecution[T] with CmdFallback[T] {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -37,7 +37,7 @@ object DefendCommand {
     }
 }
 
-abstract class DefendCommand[T] extends DefendExecution[T] with DefaultCommandNaming[T] {
+abstract class DefendCommand[T] extends AsyncDefendExecution[T] with DefaultCommandNaming[T] {
 
 }
 
