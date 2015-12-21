@@ -62,7 +62,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with F
     expectMsg("yey1")
   }
 
-  test("No fallback is selected in case of a bad request") {
+  test("No fallback is selected in case of a bad request error") {
     val err = DefendBadRequestException("bad request")
 
     val cmd = new AsyncDefendExecution[String] with StaticFallback[String] {
@@ -74,6 +74,32 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with F
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
     expectMsg(Status.Failure(err))
+  }
+
+  test("No fallback is selected in case of a success categorized as bad request") {
+    AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] with SuccessCategorization[String] {
+      def cmdKey = DefendCommandKey("load-data-3")
+      def execute: Future[String] = Future.successful("succFuture")
+      def categorize = {
+        case "succFuture" => IsBadRequest
+        case _ => IsSuccess
+      }
+    })
+    expectMsgPF(hint = "a DefendBadRequestException") {
+      case Status.Failure(e) =>
+        e shouldBe a[DefendBadRequestException]
+    }
+  }
+
+  test("Fallback is selected in case of a non existing result categorization") {
+    AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] with SuccessCategorization[String] {
+      def cmdKey = DefendCommandKey("load-data-3")
+      def execute: Future[String] = Future.successful("succFutur2e")
+      def categorize = {
+        case "succFuture" => IsBadRequest
+      }
+    })
+    expectMsg("succFutur2e")
   }
 
   test("A dynamic (cmd based) fallback is used in case of failure") {

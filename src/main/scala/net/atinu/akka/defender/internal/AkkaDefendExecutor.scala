@@ -91,9 +91,10 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
     if (breakOnSingleFailure) waitForApproval()
     val (startTime, exec) = callThrough(execute)
-    updateCallStats(startTime, exec)
-    if (breakOnSingleFailure) checkForSingleFailure(exec)
-    fallbackIfDefined(msg, exec)
+    val recatExec = applyCategorization(msg, exec)
+    updateCallStats(startTime, recatExec)
+    if (breakOnSingleFailure) checkForSingleFailure(recatExec)
+    fallbackIfDefined(msg, recatExec)
   }
 
   // adapted based on the akka circuit breaker implementation
@@ -125,6 +126,18 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       }
       (t, p.future)
     }
+  }
+
+  def applyCategorization(msg: DefendExecution[_, _], exec: Future[Any]): Future[Any] = msg match {
+    case categorizer: SuccessCategorization[Any @unchecked] =>
+      import context.dispatcher
+      exec.map { res =>
+        categorizer.categorize.applyOrElse(res, (_: Any) => IsSuccess) match {
+          case IsSuccess => res
+          case IsBadRequest => throw DefendBadRequestException.apply("result $res categorized as bad request")
+        }
+      }
+    case _ => exec
   }
 
   def callBreak[T](remainingDuration: FiniteDuration): Future[T] =
