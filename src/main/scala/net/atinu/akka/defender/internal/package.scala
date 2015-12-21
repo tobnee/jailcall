@@ -13,7 +13,7 @@ package object internal {
 
   private[internal] case object GetKeyConfigs
 
-  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: NamedCommand[_])
+  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: DefendExecution[_, _])
 
   private[internal] case class CmdMetrics(name: DefendCommandKey)
 

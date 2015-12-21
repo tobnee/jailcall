@@ -22,11 +22,11 @@ class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension w
 
 class AkkaDefender private[defender] (defenderRef: ActorRef) {
 
-  def executeToRef[T](cmd: NamedCommand[T])(implicit sender: ActorRef = Actor.noSender): Unit = {
+  def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
     defenderRef ! cmd
   }
 
-  def executeToFuture[T](cmd: NamedCommand[T]): Future[T] = {
+  def executeToFuture[R, _](cmd: DefendExecution[R, _]): Future[R] = {
     ???
   }
 }

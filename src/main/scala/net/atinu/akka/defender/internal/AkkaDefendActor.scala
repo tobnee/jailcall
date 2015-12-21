@@ -17,7 +17,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     case CreateCmdExecutor(cmdKey) =>
       sender() ! CmdExecutorCreated(cmdKey, executorFor(cmdKey))
 
-    case msg: NamedCommand[_] =>
+    case msg: NamedCommand =>
       executorFor(msg.cmdKey) forward msg
   }
 

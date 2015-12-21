@@ -50,7 +50,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case msg: DefendExecution[_] =>
+    case msg: DefendExecution[_, _] =>
       import context.dispatcher
       callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
@@ -88,7 +88,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     execFlow(msg, breakOnSingleFailure, msg.execute)
   }
 
-  def execFlow(msg: NamedCommand[_], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
+  def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
     if (breakOnSingleFailure) waitForApproval()
     val (startTime, exec) = callThrough(execute)
     updateCallStats(startTime, exec)
@@ -130,7 +130,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def callBreak[T](remainingDuration: FiniteDuration): Future[T] =
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
 
-  def fallbackIfDefined(msg: NamedCommand[_], exec: Future[Any]): Future[Any] = msg match {
+  def fallbackIfDefined(msg: DefendExecution[_, _], exec: Future[Any]): Future[Any] = msg match {
     case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
     case dynamic: CmdFallback[_] =>
       exec.fallbackTo {

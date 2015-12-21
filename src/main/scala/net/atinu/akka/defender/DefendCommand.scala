@@ -2,7 +2,7 @@ package net.atinu.akka.defender
 
 import scala.concurrent.Future
 
-trait DefaultCommandNaming[T] extends NamedCommand[T] {
+trait DefaultCommandNaming extends NamedCommand {
   // TODO: cache cmdKeys
   override val cmdKey = DefendCommandKey(buildNameFromClass)
 
@@ -27,7 +27,7 @@ object DefendCommand {
       def fallback = fb
     }
 
-  def applyWithCmdFallback[T](key: String, exec: => Future[T], fb: => NamedCommand[T]): AsyncDefendExecution[T] with CmdFallback[T] =
+  def applyWithCmdFallback[T](key: String, exec: => Future[T], fb: => DefendExecution[T, _]): AsyncDefendExecution[T] with CmdFallback[T] =
     new AsyncDefendExecution[T] with CmdFallback[T] {
       def cmdKey = key.asKey
 
@@ -37,7 +37,7 @@ object DefendCommand {
     }
 }
 
-abstract class DefendCommand[T] extends AsyncDefendExecution[T] with DefaultCommandNaming[T] {
+abstract class DefendCommand[T] extends AsyncDefendExecution[T] with DefaultCommandNaming {
 
 }
 
@@ -58,7 +58,7 @@ object SyncDefendCommand {
       def fallback = fb
     }
 
-  def applyWithCmdFallback[T](key: String, exec: => T, fb: => NamedCommand[T]): SyncDefendExecution[T] with CmdFallback[T] =
+  def applyWithCmdFallback[T](key: String, exec: => T, fb: => DefendExecution[T, _]): SyncDefendExecution[T] with CmdFallback[T] =
     new SyncDefendExecution[T] with CmdFallback[T] {
       def cmdKey = key.asKey
 
@@ -69,6 +69,4 @@ object SyncDefendCommand {
 
 }
 
-abstract class SyncDefendCommand[T] extends SyncDefendExecution[T] with DefaultCommandNaming[T] {
-
-}
+abstract class SyncDefendCommand[T] extends SyncDefendExecution[T] with DefaultCommandNaming
