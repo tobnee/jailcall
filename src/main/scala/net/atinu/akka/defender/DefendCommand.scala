@@ -1,13 +1,16 @@
 package net.atinu.akka.defender
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 trait DefaultCommandNaming extends NamedCommand {
-  // TODO: cache cmdKeys
   override val cmdKey = DefendCommandKey(buildNameFromClass)
 
-  private def buildNameFromClass =
+  private def buildNameFromClass = try {
     this.getClass.getSimpleName
+  } catch {
+    case NonFatal(_) => "anonymous-cmd"
+  }
 }
 
 object DefendCommand {
@@ -37,9 +40,7 @@ object DefendCommand {
     }
 }
 
-abstract class DefendCommand[T] extends AsyncDefendExecution[T] with DefaultCommandNaming {
-
-}
+abstract class DefendCommand[T] extends AsyncDefendExecution[T] with DefaultCommandNaming
 
 object SyncDefendCommand {
 
