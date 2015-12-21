@@ -205,9 +205,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     // rolling call count has to be significant enough
     // to consider opening the CB
     val cbConfig = cfg.cbConfig
-    if (callStats.validRequestCount >= cbConfig.requestVolumeThreshold) {
-      if (callStats.errorPercent >= cbConfig.minFailurePercent) {
-        openCircuitBreaker()
+    if (cbConfig.enabled) {
+      if (callStats.validRequestCount >= cbConfig.requestVolumeThreshold) {
+        if (callStats.errorPercent >= cbConfig.minFailurePercent) {
+          openCircuitBreaker()
+        }
       }
     }
   }

@@ -16,7 +16,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
   import scala.concurrent.duration._
 
   test("no break if call limit is to low") {
-    val thisCfg = cfg(20, 50, 500, 1000)
+    val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
     val commandKey = DefendCommandKey("nfoo")
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
@@ -29,7 +29,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
   }
 
   test("no break if error count is to low") {
-    val thisCfg = cfg(20, 50, 500, 1000)
+    val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
     val commandKey = DefendCommandKey("nfoo2")
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
@@ -42,7 +42,21 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
   }
 
   test("cb break") {
-    val thisCfg = cfg(20, 50, 500, 1000)
+    val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
+    cbCalls(thisCfg)
+    expectMsgPF() {
+      case Failure(e) =>
+        e shouldBe a[CircuitBreakerOpenException]
+    }
+  }
+
+  test("no cb break if cb disabled") {
+    val thisCfg = cfg(enabled = false, rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
+    cbCalls(thisCfg)
+    expectMsg("a")
+  }
+
+  def cbCalls(thisCfg: MsgConfig): Unit = {
     val commandKey = DefendCommandKey("foo")
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
@@ -51,14 +65,10 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! DefendCommand.apply(key = "foo", Future.successful("a"))
-    expectMsgPF() {
-      case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
-    }
   }
 
   test("cb closed / halfopen / open circle") {
-    val thisCfg = cfg(20, 50, 500, 500)
+    val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = DefendCommandKey("foo2")
     val cmd = DefendCommand.apply(key = commandKey.name, Future.successful("b"))
     val ref = system.actorOf(
@@ -78,7 +88,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
   }
 
   test("cb closed / halfopen / closed circle") {
-    val thisCfg = cfg(20, 50, 500, 500)
+    val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = DefendCommandKey("foo2")
     val failure = new IllegalStateException("naa")
     val cmd = DefendCommand.apply(key = commandKey.name, Future.failed(failure))
@@ -104,8 +114,8 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     }
   }
 
-  def cfg(rvt: Int, minFailurePercent: Int, callTimeoutMs: Int, resetTimeoutMs: Int) =
-    MsgConfig(CircuitBreakerConfig(requestVolumeThreshold = rvt, minFailurePercent = minFailurePercent, callTimeout = callTimeoutMs.millis, resetTimeout = resetTimeoutMs.millis), None)
+  def cfg(enabled: Boolean = true, rvt: Int, minFailurePercent: Int, callTimeoutMs: Int, resetTimeoutMs: Int) =
+    MsgConfig(CircuitBreakerConfig(enabled, requestVolumeThreshold = rvt, minFailurePercent = minFailurePercent, callTimeout = callTimeoutMs.millis, resetTimeout = resetTimeoutMs.millis), None)
 
   def dispatcherHolder = DispatcherHolder(system.dispatcher.asInstanceOf[MessageDispatcher], true)
 }

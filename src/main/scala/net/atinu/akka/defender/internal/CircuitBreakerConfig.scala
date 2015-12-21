@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 
 private[internal] case class MsgConfig(cbConfig: CircuitBreakerConfig, dispatcherName: Option[String])
 
-private[internal] case class CircuitBreakerConfig(requestVolumeThreshold: Int, minFailurePercent: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
+private[internal] case class CircuitBreakerConfig(enabled: Boolean, requestVolumeThreshold: Int, minFailurePercent: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
@@ -26,27 +26,30 @@ private[internal] class MsgConfigBuilder(config: Config) {
     loadConfigString(cmdKeyDispatcherConfigPath(key))
   }
 
-  private val defaultCbConfig =
-    loadCbConfigInPath("defender.circuit-breaker.default")
-      .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
+  private val defaultCbconfigValue = loadConfig("defender.circuit-breaker.default")
+    .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
+
+  private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbconfigValue)
 
   private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
-    loadCbConfigInPath(cmdKeyCBConfigPath(key)).getOrElse(defaultCbConfig)
+    loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key)).map(_.withFallback(defaultCbconfigValue))).getOrElse(defaultCbConfig)
 
   private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
 
   private def cmdKeyDispatcherConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.dispatcher"
 
-  private def loadCbConfigInPath(path: String) = {
-    val cfg = loadConfig(path)
-    cfg.map { cbConfig =>
-      CircuitBreakerConfig(
-        requestVolumeThreshold = cbConfig.getInt("request-volume-threshold"),
-        minFailurePercent = cbConfig.getInt("min-failure-percent"),
-        callTimeout = loadFiniteDuration(cbConfig, "call-timeout", TimeUnit.MILLISECONDS),
-        resetTimeout = loadFiniteDuration(cbConfig, "reset-timeout", TimeUnit.SECONDS)
-      )
-    }
+  private def loadCbConfigInPath(cfg: Option[Config]) = {
+    cfg.map { cbConfig => forceLoadCbConfigInPath(cbConfig) }
+  }
+
+  private def forceLoadCbConfigInPath(cbConfig: Config): CircuitBreakerConfig = {
+    CircuitBreakerConfig(
+      enabled = cbConfig.getBoolean("enabled"),
+      requestVolumeThreshold = cbConfig.getInt("request-volume-threshold"),
+      minFailurePercent = cbConfig.getInt("min-failure-percent"),
+      callTimeout = loadFiniteDuration(cbConfig, "call-timeout", TimeUnit.MILLISECONDS),
+      resetTimeout = loadFiniteDuration(cbConfig, "reset-timeout", TimeUnit.SECONDS)
+    )
   }
 
   private def loadConfig(path: String): Option[Config] = {
