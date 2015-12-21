@@ -15,6 +15,7 @@ class ConfigTest extends FunSuite with Matchers {
         |  command {
         |    load-data {
         |      circuit-breaker {
+                enabled = false,
         |       request-volume-threshold = 21,
         |       min-failure-percent = 60,
         |       call-timeout = 3 seconds,
@@ -47,7 +48,7 @@ class ConfigTest extends FunSuite with Matchers {
   test("load a custom config if specified") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-data".asKey).cbConfig should equal(CircuitBreakerConfig(true, 21, 60, 3.seconds, 2.minutes))
+    builder.loadConfigForKey("load-data".asKey).cbConfig should equal(CircuitBreakerConfig(false, 21, 60, 3.seconds, 2.minutes))
   }
 
   test("load a dispatcher if specified") {
