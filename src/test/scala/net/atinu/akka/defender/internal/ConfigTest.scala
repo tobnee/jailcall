@@ -23,6 +23,9 @@ class ConfigTest extends FunSuite with Matchers {
         |      },
         |      dispatcher = "foo"
         |    }
+        |    load-y {
+        |
+        |    }
         |  }
         |}""".stripMargin
     )
@@ -37,12 +40,25 @@ class ConfigTest extends FunSuite with Matchers {
     )
 
   val cfg = refCfg.withFallback(customCfg)
+  val defaultCbConfig: CircuitBreakerConfig = CircuitBreakerConfig(true, 20, 50, 1.second, 5.seconds)
 
   test("the default config gets loaded as expected") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(refCfg)
-    val defaultCbConfig = builder.loadConfigForKey("foo".asKey)
-    defaultCbConfig.cbConfig should equal(CircuitBreakerConfig(true, 20, 50, 1.second, 5.seconds))
+    val defCbConfig = builder.loadConfigForKey("foo".asKey)
+    defCbConfig.cbConfig should equal(defaultCbConfig)
+  }
+
+  test("non specified key results in default config") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    builder.loadConfigForKey("load-x".asKey).cbConfig should equal(defaultCbConfig)
+  }
+
+  test("specified key partial options results in default config fallback") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    builder.loadConfigForKey("load-y".asKey).cbConfig should equal(defaultCbConfig)
   }
 
   test("load a custom config if specified") {
