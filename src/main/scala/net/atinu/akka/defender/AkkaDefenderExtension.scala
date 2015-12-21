@@ -6,6 +6,7 @@ import akka.actor._
 import akka.util.Timeout
 import net.atinu.akka.defender.internal.AkkaDefendActor
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
+import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -26,9 +27,11 @@ class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension w
 }
 
 class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContext) {
+
   import akka.pattern.ask
 
   private val createTimeout = Timeout(1, TimeUnit.SECONDS)
+  private val execTimeout = Timeout(60, TimeUnit.SECONDS)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
@@ -36,7 +39,7 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
     if (refCache.contains(name)) {
       refCache.get(name) ! cmd
     } else {
-      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).onComplete {
+      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated].onComplete {
         case Success(created: CmdExecutorCreated) =>
           val executor: ActorRef = created.executor
           executor ! cmd
@@ -46,7 +49,17 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
     }
   }
 
-  def executeToFuture[R, _](cmd: DefendExecution[R, _]): Future[R] = {
-    ???
+  def executeToFuture[R](cmd: DefendExecution[R, _])(implicit tag: ClassTag[R]): Future[R] = {
+    val name: String = cmd.cmdKey.name
+    def askInternal(ref: ActorRef) = ref.ask(cmd)(execTimeout).mapTo[R]
+    if (refCache.contains(name)) {
+      askInternal(refCache.get(name))
+    } else {
+      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated].flatMap { created =>
+        val executor: ActorRef = created.executor
+        refCache.put(name, executor)
+        askInternal(executor)
+      }(ec)
+    }
   }
 }

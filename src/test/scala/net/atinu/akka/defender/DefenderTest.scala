@@ -3,12 +3,13 @@ package net.atinu.akka.defender
 import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.util.ActorTest
+import org.scalatest.concurrent.Futures
 
 import scala.concurrent.Future
 
-class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
+class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with Futures {
 
-  test("the result of a future is executed and returned") {
+  test("a command is executed and returned to an actor") {
     AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] {
       def cmdKey = DefendCommandKey("a")
       def execute: Future[String] = Future.successful("succFuture")
@@ -16,13 +17,34 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) {
     expectMsg("succFuture")
   }
 
-  test("the result of a failed future is a failure message") {
+  test("a command is executed and returned to a future") {
+    val res = AkkaDefender(system).defender.executeToFuture(new AsyncDefendExecution[String] {
+      def cmdKey = DefendCommandKey("af")
+      def execute: Future[String] = Future.successful("succFuture")
+    })
+    whenReady(res) { v =>
+      v should equal("succFuture")
+    }
+  }
+
+  test("a command fails and is returned to an actor") {
     val err = new scala.IllegalArgumentException("foo")
     AkkaDefender(system).defender.executeToRef(new AsyncDefendExecution[String] {
       def cmdKey = DefendCommandKey("a")
       def execute = Future.failed(err)
     })
     expectMsg(Failure(err))
+  }
+
+  test("a command fails and is returned to a future") {
+    val err = new scala.IllegalArgumentException("foo")
+    val res = AkkaDefender(system).defender.executeToFuture(new AsyncDefendExecution[String] {
+      def cmdKey = DefendCommandKey("a")
+      def execute = Future.failed(err)
+    })
+    whenReady(res.failed) { v =>
+      v should equal(err)
+    }
   }
 
   test("A static fallback is used in case of failure") {
