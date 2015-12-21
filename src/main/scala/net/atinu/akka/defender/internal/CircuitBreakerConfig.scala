@@ -65,25 +65,6 @@ private[internal] class MsgConfigBuilder(config: Config) {
   }
 }
 
-private[internal] class CircuitBreakerBuilder(scheduler: Scheduler) {
-
-  def createCb(msgKey: DefendCommandKey, cfg: CircuitBreakerConfig, log: LoggingAdapter): AkkaDefendCircuitBreaker = {
-    createCbFromConfig(msgKey, cfg, log)
-  }
-
-  private def createCbFromConfig(msgKey: DefendCommandKey, cbConfig: CircuitBreakerConfig, log: LoggingAdapter) = {
-    AkkaDefendCircuitBreaker(
-      scheduler,
-      maxFailures = cbConfig.minFailurePercent,
-      callTimeout = cbConfig.callTimeout,
-      resetTimeout = cbConfig.resetTimeout
-    )
-      .onClose(log.info("circuit breaker for command {} is closed again", msgKey))
-      .onHalfOpen(log.info("circuit breaker for command {} is half open, wait for first call to succeed", msgKey))
-      .onOpen(log.warning("circuit breaker for command {} is open for {}", msgKey, cbConfig.resetTimeout))
-  }
-}
-
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
   def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {

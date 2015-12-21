@@ -10,7 +10,6 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
   val rootConfig = context.system.settings.config
   val cbConfigBuilder = new MsgConfigBuilder(rootConfig)
-  val cbBuilder = new CircuitBreakerBuilder(context.system.scheduler)
   val dispatcherLookup = new DispatcherLookup(context.system.dispatchers)
 
   def receive = {
