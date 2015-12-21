@@ -23,7 +23,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     )
 
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
-      CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1))
+      CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! DefendCommand.apply(key = "nfoo", Future.successful("na"))
     expectMsg("na")
   }
@@ -36,7 +36,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     )
 
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
-      CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1))
+      CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! DefendCommand.apply(key = "nfoo2", Future.successful("na"))
     expectMsg("na")
   }
@@ -49,7 +49,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     )
 
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
-      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! DefendCommand.apply(key = "foo", Future.successful("a"))
     expectMsgPF() {
       case Failure(e) =>
@@ -65,7 +65,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
-      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
@@ -86,7 +86,7 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
     ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
-      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3))
+      CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>

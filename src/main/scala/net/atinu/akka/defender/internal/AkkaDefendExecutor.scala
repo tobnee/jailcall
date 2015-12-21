@@ -131,14 +131,23 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
 
   def fallbackIfDefined(msg: DefendExecution[_, _], exec: Future[Any]): Future[Any] = msg match {
-    case static: StaticFallback[_] => exec.fallbackTo(Future.fromTry(Try(static.fallback)))
+    case static: StaticFallback[_] =>
+      fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
     case dynamic: CmdFallback[_] =>
-      exec.fallbackTo {
+      fallbackIfValidRequest(exec) { err =>
         val fallbackPromise = Promise.apply[Any]()
         self ! FallbackAction(fallbackPromise, dynamic.fallback)
         fallbackPromise.future
       }
     case _ => exec
+  }
+
+  def fallbackIfValidRequest(exec: Future[_])(recover: Throwable => Future[_]) = {
+    import context.dispatcher
+    exec.recoverWith {
+      case _: DefendBadRequestException => exec
+      case e => recover(e)
+    }
   }
 
   def updateCallStats(startTime: Long, exec: Future[Any]): Unit = {
@@ -150,6 +159,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       case Failure(v) =>
         val t = System.currentTimeMillis() - startTime
         val msg = v match {
+          case e: DefendBadRequestException => ReportBadRequestCall(t)
           case e: TimeoutException => ReportTimeoutCall(t)
           case e: CircuitBreakerOpenException => ReportCircuitBreakerOpenCall
           case e => ReportErrorCall(t)
@@ -182,7 +192,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     // rolling call count has to be significant enough
     // to consider opening the CB
     val cbConfig = cfg.cbConfig
-    if (callStats.totalCount >= cbConfig.requestVolumeThreshold) {
+    if (callStats.validRequestCount >= cbConfig.requestVolumeThreshold) {
       if (callStats.errorPercent >= cbConfig.minFailurePercent) {
         openCircuitBreaker()
       }

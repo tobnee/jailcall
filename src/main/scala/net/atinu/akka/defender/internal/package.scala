@@ -35,7 +35,7 @@ package object internal {
 
   object CmdKeyStatsSnapshot {
 
-    val initial = CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 0))
+    val initial = CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 0, 0))
   }
 
 }

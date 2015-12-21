@@ -41,6 +41,11 @@ class RollingStats(val size: Int) {
     this
   }
 
+  def recordBadRequest(): RollingStats = {
+    current.br_++
+    this
+  }
+
   def recordTimeout(): RollingStats = {
     current.to_++
     this

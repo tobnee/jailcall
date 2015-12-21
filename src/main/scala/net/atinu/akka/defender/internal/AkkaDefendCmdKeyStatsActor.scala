@@ -26,6 +26,8 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
       updateStats(ReportCircuitBreakerOpenCall.metricType)
     case r: ReportTimeoutCall =>
       updateStats(r.execTimeMs, r.metricType)
+    case r: ReportBadRequestCall =>
+      updateStats(r.execTimeMs, r.metricType)
     case RollStats =>
       rollAndNotifyIfUpdated()
   }
@@ -38,10 +40,11 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
 
   def updateStats(metricType: MetricType): Unit = {
     metricType match {
-      case SuccCall => rollingStats.recordSuccess()
-      case ErrCall => rollingStats.recordError()
-      case TimeoutCall => rollingStats.recordTimeout()
-      case CircuitBreakerOpenCall => rollingStats.recordCbOpen()
+      case Succ => rollingStats.recordSuccess()
+      case Err => rollingStats.recordError()
+      case Timeout => rollingStats.recordTimeout()
+      case CircuitBreakerOpen => rollingStats.recordCbOpen()
+      case BadRequest => rollingStats.recordBadRequest()
     }
   }
 
@@ -70,16 +73,18 @@ object AkkaDefendCmdKeyStatsActor {
   def props(cmdKey: DefendCommandKey) = Props(new AkkaDefendCmdKeyStatsActor(cmdKey))
 
   sealed abstract class MetricReportCommand(val metricType: MetricType)
-  case class ReportSuccCall(execTimeMs: Long) extends MetricReportCommand(SuccCall)
-  case class ReportErrorCall(execTimeMs: Long) extends MetricReportCommand(ErrCall)
-  case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpenCall)
-  case class ReportTimeoutCall(execTimeMs: Long) extends MetricReportCommand(TimeoutCall)
+  case class ReportSuccCall(execTimeMs: Long) extends MetricReportCommand(Succ)
+  case class ReportErrorCall(execTimeMs: Long) extends MetricReportCommand(Err)
+  case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpen)
+  case class ReportTimeoutCall(execTimeMs: Long) extends MetricReportCommand(Timeout)
+  case class ReportBadRequestCall(execTimeMs: Long) extends MetricReportCommand(BadRequest)
 
   sealed trait MetricType
-  case object SuccCall extends MetricType
-  case object ErrCall extends MetricType
-  case object TimeoutCall extends MetricType
-  case object CircuitBreakerOpenCall extends MetricType
+  case object Succ extends MetricType
+  case object Err extends MetricType
+  case object Timeout extends MetricType
+  case object BadRequest extends MetricType
+  case object CircuitBreakerOpen extends MetricType
 
   case object RollStats
 

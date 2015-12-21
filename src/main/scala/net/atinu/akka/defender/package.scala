@@ -6,4 +6,8 @@ package object defender {
     def asKey = DefendCommandKey.apply(name)
   }
 
+  class DefendBadRequestException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+    def this(message: String) = this(message, this.asInstanceOf[RuntimeException])
+  }
+
 }
