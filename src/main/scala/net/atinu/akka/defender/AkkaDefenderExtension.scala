@@ -1,9 +1,14 @@
 package net.atinu.akka.defender
 
-import akka.actor._
-import net.atinu.akka.defender.internal.AkkaDefendActor
+import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
 
-import scala.concurrent.Future
+import akka.actor._
+import akka.util.Timeout
+import net.atinu.akka.defender.internal.AkkaDefendActor
+import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
+import scala.util.{ Failure, Success }
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 object AkkaDefender extends ExtensionId[AkkaDefenderExtension] {
   def createExtension(system: ExtendedActorSystem): AkkaDefenderExtension =
@@ -15,15 +20,30 @@ class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension w
   private val rootActorName = system.settings.config.getString("defender.root-actor-name")
   private val defenderRef = system.systemActorOf(AkkaDefendActor.props, rootActorName)
 
-  val defender = new AkkaDefender(defenderRef)
+  val defender = new AkkaDefender(defenderRef, system.dispatcher)
 
   def lookup(): ExtensionId[_ <: Extension] = AkkaDefender
 }
 
-class AkkaDefender private[defender] (defenderRef: ActorRef) {
+class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContext) {
+  import akka.pattern.ask
+
+  private val createTimeout = Timeout(1, TimeUnit.SECONDS)
+  private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
-    defenderRef ! cmd
+    val name: String = cmd.cmdKey.name
+    if (refCache.contains(name)) {
+      refCache.get(name) ! cmd
+    } else {
+      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).onComplete {
+        case Success(created: CmdExecutorCreated) =>
+          val executor: ActorRef = created.executor
+          executor ! cmd
+          refCache.put(name, executor)
+        case Failure(e) => throw e
+      }(ec)
+    }
   }
 
   def executeToFuture[R, _](cmd: DefendExecution[R, _]): Future[R] = {
