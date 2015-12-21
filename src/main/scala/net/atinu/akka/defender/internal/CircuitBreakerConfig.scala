@@ -26,7 +26,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     loadConfigString(cmdKeyDispatcherConfigPath(key))
   }
 
-  private val defaultCbconfigValue = loadConfig("defender.circuit-breaker.default")
+  private val defaultCbconfigValue = loadConfig("defender.command.default.circuit-breaker")
     .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
   private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbconfigValue)
