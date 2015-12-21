@@ -1,5 +1,6 @@
 package net.atinu.akka.defender
 
+import akka.actor.Status
 import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.util.ActorTest
@@ -59,6 +60,20 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with F
     val defender = AkkaDefender(system).defender
     defender.executeToRef(cmd)
     expectMsg("yey1")
+  }
+
+  test("No fallback is selected in case of a bad request") {
+    val err = DefendBadRequestException("bad request")
+
+    val cmd = new AsyncDefendExecution[String] with StaticFallback[String] {
+      def cmdKey = "load-data-3".asKey
+      def execute = Future.failed(err)
+      def fallback: String = "yey1"
+    }
+
+    val defender = AkkaDefender(system).defender
+    defender.executeToRef(cmd)
+    expectMsg(Status.Failure(err))
   }
 
   test("A dynamic (cmd based) fallback is used in case of failure") {
