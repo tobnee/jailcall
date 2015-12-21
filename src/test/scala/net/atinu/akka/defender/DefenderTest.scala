@@ -39,7 +39,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with F
   test("a command fails and is returned to a future") {
     val err = new scala.IllegalArgumentException("foo")
     val res = AkkaDefender(system).defender.executeToFuture(new AsyncDefendExecution[String] {
-      def cmdKey = DefendCommandKey("a")
+      def cmdKey = DefendCommandKey("af")
       def execute = Future.failed(err)
     })
     whenReady(res.failed) { v =>

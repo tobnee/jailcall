@@ -39,7 +39,7 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
     if (refCache.contains(name)) {
       refCache.get(name) ! cmd
     } else {
-      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated].onComplete {
+      askCreateExecutor(cmd).onComplete {
         case Success(created: CmdExecutorCreated) =>
           val executor: ActorRef = created.executor
           executor ! cmd
@@ -55,11 +55,15 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
     if (refCache.contains(name)) {
       askInternal(refCache.get(name))
     } else {
-      defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated].flatMap { created =>
+      askCreateExecutor(cmd).flatMap { created =>
         val executor: ActorRef = created.executor
         refCache.put(name, executor)
         askInternal(executor)
       }(ec)
     }
+  }
+
+  private def askCreateExecutor(cmd: DefendExecution[_, _]): Future[CmdExecutorCreated] = {
+    defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated]
   }
 }
