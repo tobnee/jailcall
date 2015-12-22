@@ -6,6 +6,7 @@ class RollingStats(val size: Int) {
 
   private val elems: Array[StatsBucket] = Array.fill(size)(new StatsBucket)
   private var currentStep: Int = 0
+  private val sumBucket = new StatsBucket()
 
   def roll() = {
     currentStep = (currentStep + 1) % size
@@ -17,13 +18,14 @@ class RollingStats(val size: Int) {
   }
 
   def sum: CallStats = {
-    val sumBucket = new StatsBucket()
+    val sb = sumBucket
+    sb.initialize
     var i = 0
     while (i < elems.size) {
-      sumBucket += elems.apply(i)
+      sb += elems.apply(i)
       i += 1
     }
-    sumBucket.toCallStats
+    sb.toCallStats
   }
 
   def recordSuccess(): RollingStats = {
