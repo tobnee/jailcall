@@ -1,6 +1,6 @@
 # akka-defender
 
-Defend your applications from failures in distributed systems through the use:
+Defend your applications from failures in distributed systems through the use of:
 
 - Call stats based circuit breakers
 - Bulkheading of commands
