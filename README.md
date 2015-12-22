@@ -6,6 +6,7 @@ Defend your applications from failures in distributed systems through the use of
 - Bulkheading of commands
 - Histrogram supported timeout baselining (planned)
 
+[![Build Status](https://travis-ci.org/tobnee/akka-defender.svg?branch=master)](https://travis-ci.org/tobnee/akka-defender)
 ## How it works
 
 *akka-defender* will create one `AkkaDefendExecutor` actor per command type, which is determined by the command key.
