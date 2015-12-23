@@ -13,20 +13,33 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   val dispatcherLookup = new DispatcherLookup(context.system.dispatchers)
 
   def receive = {
-    case CreateCmdExecutor(cmdKey) =>
-      sender() ! CmdExecutorCreated(cmdKey, executorFor(cmdKey))
+    case CreateCmdExecutor(cmdKey, Some(exec)) =>
+      val needsIsolation = exec match {
+        case _: AsyncDefendExecution[_] => false
+        case _: SyncDefendExecution[_] => true
+      }
+      createExecutor(cmdKey, needsIsolation = needsIsolation)
+
+    case CreateCmdExecutor(cmdKey, None) =>
+      createExecutor(cmdKey, needsIsolation = true)
 
     case msg: NamedCommand =>
-      executorFor(msg.cmdKey) forward msg
+      msgKeyToExecutor.get(msg.cmdKey.name).foreach { ref =>
+        ref forward msg
+      }
   }
 
-  def executorFor(cmdKey: DefendCommandKey): ActorRef = {
-    msgKeyToExecutor.getOrElseUpdate(cmdKey.name, buildCmdActor(cmdKey))
+  def createExecutor(cmdKey: DefendCommandKey, needsIsolation: Boolean) = {
+    sender() ! CmdExecutorCreated(cmdKey, executorFor(cmdKey, needsIsolation))
   }
 
-  private def buildCmdActor(msgKey: DefendCommandKey): ActorRef = {
+  def executorFor(cmdKey: DefendCommandKey, needsIsolation: Boolean): ActorRef = {
+    msgKeyToExecutor.getOrElseUpdate(cmdKey.name, buildCmdActor(cmdKey, needsIsolation))
+  }
+
+  private def buildCmdActor(msgKey: DefendCommandKey, needsIsolation: Boolean): ActorRef = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
-    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log)
+    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log, needsIsolation)
     context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, dispatcherHolder))
   }
 }
@@ -35,7 +48,7 @@ object AkkaDefendActor {
 
   def props = Props(new AkkaDefendActor)
 
-  case class CreateCmdExecutor(cmdKey: DefendCommandKey)
+  case class CreateCmdExecutor(cmdKey: DefendCommandKey, firstCmd: Option[DefendExecution[_, _]])
 
   case class CmdExecutorCreated(cmdKey: DefendCommandKey, executor: ActorRef)
 }

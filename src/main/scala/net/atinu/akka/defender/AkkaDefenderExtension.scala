@@ -64,6 +64,6 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
   }
 
   private def askCreateExecutor(cmd: DefendExecution[_, _]): Future[CmdExecutorCreated] = {
-    defenderRef.ask(CreateCmdExecutor(cmd.cmdKey))(createTimeout).mapTo[CmdExecutorCreated]
+    defenderRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
   }
 }

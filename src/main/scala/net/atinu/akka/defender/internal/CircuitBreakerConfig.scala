@@ -12,9 +12,18 @@ import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.duration._
 
-private[internal] case class MsgConfig(cbConfig: CircuitBreakerConfig, dispatcherName: Option[String])
+private[internal] case class MsgConfig(circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig)
 
 private[internal] case class CircuitBreakerConfig(enabled: Boolean, requestVolumeThreshold: Int, minFailurePercent: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
+
+private[internal] case class CustomIsolationConfig(dispatcherName: String)
+
+object IsolationConfig {
+
+  def default = IsolationConfig(None)
+}
+
+private[internal] case class IsolationConfig(custom: Option[CustomIsolationConfig])
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
@@ -22,21 +31,21 @@ private[internal] class MsgConfigBuilder(config: Config) {
     MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key))
   }
 
-  private def loadDispatcherConfig(key: DefendCommandKey) = {
-    loadConfigString(cmdKeyDispatcherConfigPath(key))
-  }
-
   private val defaultCbconfigValue = loadConfig("defender.command.default.circuit-breaker")
     .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
   private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbconfigValue)
 
+  private val defaultIsolationConfigValue = loadConfig("defender.command.default.isolation")
+    .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
+
+  private val defaultIsolationConfig = forceLoadIsolationConfig(defaultIsolationConfigValue)
+
   private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
-    loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key)).map(_.withFallback(defaultCbconfigValue))).getOrElse(defaultCbConfig)
+    loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
+      .map(_.withFallback(defaultCbconfigValue))).getOrElse(defaultCbConfig)
 
   private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
-
-  private def cmdKeyDispatcherConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.dispatcher"
 
   private def loadCbConfigInPath(cfg: Option[Config]) = {
     cfg.map { cbConfig => forceLoadCbConfigInPath(cbConfig) }
@@ -52,12 +61,42 @@ private[internal] class MsgConfigBuilder(config: Config) {
     )
   }
 
+  private def loadDispatcherConfig(key: DefendCommandKey): IsolationConfig = {
+    loadIsolationConfig(loadConfig(cmdKeyDispatcherConfigPath(key))
+      .map(_.withFallback(defaultIsolationConfigValue))).getOrElse(defaultIsolationConfig)
+  }
+
+  private def cmdKeyDispatcherConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.isolation"
+
+  private def loadIsolationConfig(isolationConfig: Option[Config]) = {
+    isolationConfig.map(cfg => forceLoadIsolationConfig(cfg))
+  }
+
+  private def forceLoadIsolationConfig(isolationConfig: Config) = {
+    IsolationConfig(
+      custom =
+      if (isolationConfig.getBoolean("auto")) None
+      else forceLoadCustomIsolationConfig(isolationConfig)
+    )
+  }
+
+  private def forceLoadCustomIsolationConfig(isolationConfig: Config) = {
+    loadConfigString("custom.dispatcher", isolationConfig).map { dispatcher =>
+      CustomIsolationConfig(
+        dispatcherName = dispatcher
+      )
+    }
+  }
+
   private def loadConfig(path: String): Option[Config] = {
     if (config.hasPath(path)) Some(config.getConfig(path)) else None
   }
 
-  private def loadConfigString(key: String): Option[String] = {
-    if (config.hasPath(key)) Some(config.getString(key)) else None
+  private def loadConfigString(key: String): Option[String] =
+    loadConfigString(key, config)
+
+  private def loadConfigString(key: String, cfg: Config): Option[String] = {
+    if (cfg.hasPath(key)) Some(cfg.getString(key)) else None
   }
 
   private def loadFiniteDuration(cfg: Config, key: String, timeUnit: TimeUnit) = {
@@ -67,15 +106,15 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter): DispatcherHolder = {
-    msgConfig.dispatcherName match {
-      case Some(dispatcherName) if dispatchers.hasDispatcher(dispatcherName) =>
-        DispatcherHolder(dispatchers.lookup(dispatcherName), isDefault = false)
+  def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter, needsIsolation: Boolean): DispatcherHolder = {
+    msgConfig.isolation.custom match {
+      case Some(cfg) if dispatchers.hasDispatcher(cfg.dispatcherName) =>
+        DispatcherHolder(dispatchers.lookup(cfg.dispatcherName), isDefault = false)
 
-      case Some(dispatcherName) =>
+      case Some(cfg) =>
         log.warning(
           "dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
-          dispatcherName, msgKey.name
+          cfg.dispatcherName, msgKey.name
         )
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
 

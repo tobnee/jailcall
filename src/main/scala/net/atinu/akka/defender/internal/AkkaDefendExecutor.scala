@@ -108,7 +108,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       } catch { case NonFatal(t) ⇒ (time, Future.failed(t)) }
     }
 
-    val callTimeout = cfg.cbConfig.callTimeout
+    val callTimeout = cfg.circuitBreaker.callTimeout
     if (callTimeout == Duration.Zero) {
       materialize(body)
     } else {
@@ -204,7 +204,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def openCircuitBreakerOnFailureLimit(callStats: CallStats): Unit = {
     // rolling call count has to be significant enough
     // to consider opening the CB
-    val cbConfig = cfg.cbConfig
+    val cbConfig = cfg.circuitBreaker
     if (cbConfig.enabled) {
       if (callStats.validRequestCount >= cbConfig.requestVolumeThreshold) {
         if (callStats.errorPercent >= cbConfig.minFailurePercent) {
@@ -216,13 +216,13 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def openCircuitBreaker(): Unit = {
     import context.dispatcher
-    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.cbConfig.resetTimeout)
-    context.system.scheduler.scheduleOnce(cfg.cbConfig.resetTimeout, self, TryCloseCircuitBreaker)
+    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.circuitBreaker.resetTimeout)
+    context.system.scheduler.scheduleOnce(cfg.circuitBreaker.resetTimeout, self, TryCloseCircuitBreaker)
     context.become(receiveOpen(calcCircuitBreakerEndTime))
   }
 
   def calcCircuitBreakerEndTime: Long = {
-    System.currentTimeMillis() + cfg.cbConfig.resetTimeout.toMillis
+    System.currentTimeMillis() + cfg.circuitBreaker.resetTimeout.toMillis
   }
 
   def calcCircuitBreakerOpenRemaining(end: Long) = {
