@@ -7,7 +7,7 @@ import akka.dispatch.{ Dispatchers, MessageDispatcher }
 import akka.event.LoggingAdapter
 import akka.pattern.AkkaDefendCircuitBreaker
 import com.typesafe.config.Config
-import net.atinu.akka.defender.DefendCommandKey
+import net.atinu.akka.defender.{ AkkaDefender, DefendCommandKey }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.duration._
@@ -117,6 +117,9 @@ private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
           cfg.dispatcherName, msgKey.name
         )
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
+
+      case _ if needsIsolation =>
+        DispatcherHolder(dispatchers.lookup(AkkaDefender.DEFENDER_DISPATCHER_ID), isDefault = false)
 
       case _ =>
         DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)

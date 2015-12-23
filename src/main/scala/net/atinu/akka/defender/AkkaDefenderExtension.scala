@@ -3,7 +3,10 @@ package net.atinu.akka.defender
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
 
 import akka.actor._
+import akka.defend.AkkaDefendDispatcherConfigurator
+import akka.dispatch.Dispatchers
 import akka.util.Timeout
+import com.typesafe.config.Config
 import net.atinu.akka.defender.internal.AkkaDefendActor
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
 import scala.reflect.ClassTag
@@ -14,11 +17,24 @@ import scala.concurrent.{ ExecutionContext, Future }
 object AkkaDefender extends ExtensionId[AkkaDefenderExtension] {
   def createExtension(system: ExtendedActorSystem): AkkaDefenderExtension =
     new AkkaDefenderExtension(system)
+
+  private[defender] val DEFENDER_DISPATCHER_ID = "akka-defend-default"
 }
 
 class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension with ExtensionIdProvider {
 
-  private val rootActorName = system.settings.config.getString("defender.root-actor-name")
+  private val config = system.settings.config
+  private val dispatchers = system.dispatchers
+  private val dispatcherConf: Config =
+    config.getConfig("defender.isolation.default-dispatcher")
+      .withFallback(config.getConfig("akka.actor.default-dispatcher"))
+
+  system.dispatchers.registerConfigurator(
+    AkkaDefender.DEFENDER_DISPATCHER_ID,
+    new AkkaDefendDispatcherConfigurator(dispatcherConf, dispatchers.prerequisites)
+  )
+
+  private val rootActorName = config.getString("defender.root-actor-name")
   private val defenderRef = system.systemActorOf(AkkaDefendActor.props, rootActorName)
 
   val defender = new AkkaDefender(defenderRef, system.dispatcher)

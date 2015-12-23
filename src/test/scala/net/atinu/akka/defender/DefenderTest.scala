@@ -118,7 +118,7 @@ class DefenderTest extends ActorTest("DefenderTest", DefenderTest.config) with F
     val err = new scala.IllegalArgumentException("foo2")
 
     val cmd1 = new SyncDefendExecution[String] {
-      def cmdKey = "load-data2".asKey
+      def cmdKey = "load-data-sync-2".asKey
       def execute = "yes2"
     }
 
