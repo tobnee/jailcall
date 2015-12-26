@@ -103,32 +103,3 @@ private[internal] class MsgConfigBuilder(config: Config) {
     FiniteDuration.apply(cfg.getDuration(key, timeUnit), timeUnit)
   }
 }
-
-private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
-
-  def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter, needsIsolation: Boolean): DispatcherHolder = {
-    msgConfig.isolation.custom match {
-      case Some(cfg) if dispatchers.hasDispatcher(cfg.dispatcherName) =>
-        DispatcherHolder(dispatchers.lookup(cfg.dispatcherName), isDefault = false)
-
-      case Some(cfg) =>
-        log.warning(
-          "dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
-          cfg.dispatcherName, msgKey.name
-        )
-        DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
-
-      case _ if needsIsolation =>
-        DispatcherHolder(dispatchers.lookup(AkkaDefender.DEFENDER_DISPATCHER_ID), isDefault = false)
-
-      case _ =>
-        DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
-    }
-  }
-}
-
-object DispatcherLookup {
-
-  case class DispatcherHolder(dispatcher: MessageDispatcher, isDefault: Boolean)
-}
-
