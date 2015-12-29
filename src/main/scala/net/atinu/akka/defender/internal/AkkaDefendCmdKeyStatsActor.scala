@@ -7,14 +7,14 @@ import net.atinu.akka.defender.internal.util.RollingStats
 import org.HdrHistogram.Histogram
 import scala.concurrent.duration._
 
-class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with ActorLogging {
+class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfig) extends Actor with ActorLogging {
   import context.dispatcher
 
   val execTime = new Histogram(600000L, 1)
-  val rollingStats = RollingStats.withSize(10)
+  val rollingStats = RollingStats.withSize(metrics.rollingStatsBuckets)
   var updateSinceLastSnapshot = false
 
-  val interval = 1.second
+  val interval = metrics.rollingStatsWindowDuration / metrics.rollingStatsBuckets
   context.system.scheduler.schedule(interval, interval, self, RollStats)
 
   def receive = {
@@ -70,7 +70,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
 
 object AkkaDefendCmdKeyStatsActor {
 
-  def props(cmdKey: DefendCommandKey) = Props(new AkkaDefendCmdKeyStatsActor(cmdKey))
+  def props(cmdKey: DefendCommandKey, metrics: MetricsConfig) = Props(new AkkaDefendCmdKeyStatsActor(cmdKey, metrics))
 
   sealed abstract class MetricReportCommand(val metricType: MetricType)
   case class ReportSuccCall(execTimeMs: Long) extends MetricReportCommand(Succ)

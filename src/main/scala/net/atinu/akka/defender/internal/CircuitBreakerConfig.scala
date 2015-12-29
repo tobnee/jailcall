@@ -3,18 +3,15 @@ package net.atinu.akka.defender.internal
 import java.util.concurrent.TimeUnit
 
 import akka.ConfigurationException
-import akka.actor.Scheduler
-import akka.dispatch.{ Dispatchers, MessageDispatcher }
-import akka.event.LoggingAdapter
-import akka.pattern.AkkaDefendCircuitBreaker
 import com.typesafe.config.Config
-import net.atinu.akka.defender.{ AkkaDefender, DefendCommandKey }
-import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
+import net.atinu.akka.defender.DefendCommandKey
 
 import scala.concurrent.duration._
 import scala.util.Try
 
-private[internal] case class MsgConfig(circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig)
+private[internal] case class MsgConfig(circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig, metrics: MetricsConfig)
+
+private[internal] case class MetricsConfig(rollingStatsWindowDuration: FiniteDuration, rollingStatsBuckets: Int)
 
 private[internal] case class CircuitBreakerConfig(enabled: Boolean, requestVolumeThreshold: Int, minFailurePercent: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)
 
@@ -33,7 +30,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
   def loadConfigForKey(key: DefendCommandKey): Try[MsgConfig] = {
     Try {
-      MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key))
+      MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key), loadMetricsConfig(key))
     }
   }
 
@@ -44,6 +41,10 @@ private[internal] class MsgConfigBuilder(config: Config) {
   private val defaultIsolationConfigValue = loadConfigDefault("defender.command.default.isolation")
 
   private val defaultIsolationConfig = forceLoadIsolationConfig(defaultIsolationConfigValue)
+
+  private val defaultMetricsConfigValue = loadConfigDefault("defender.command.default.metrics")
+
+  private val defaultMetricsConfig = forceLoadMetricsConfig(defaultMetricsConfigValue)
 
   private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
     loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
@@ -91,6 +92,28 @@ private[internal] class MsgConfigBuilder(config: Config) {
       )
     }
   }
+
+  private def loadMetricsConfig(key: DefendCommandKey): MetricsConfig =
+    loadMetricsConfigInPath(loadConfig(cmdKeyMetricsConfigPath(key))
+      .map(_.withFallback(defaultMetricsConfigValue)))
+      .collect {
+        case mc if (mc.rollingStatsWindowDuration.toMillis % mc.rollingStatsBuckets) == 0 => mc
+        case _ =>
+          throw new ConfigurationException("rolling-stats.window should be divisible by rolling-stats.buckets")
+      }.getOrElse(defaultMetricsConfig)
+
+  private def loadMetricsConfigInPath(cfg: Option[Config]): Option[MetricsConfig] = {
+    cfg.map { cbConfig => forceLoadMetricsConfig(cbConfig) }
+  }
+
+  private def forceLoadMetricsConfig(config: Config): MetricsConfig = {
+    MetricsConfig(
+      rollingStatsWindowDuration = loadFiniteDuration(config, "rolling-stats.window", TimeUnit.MILLISECONDS),
+      rollingStatsBuckets = config.getInt("rolling-stats.buckets")
+    )
+  }
+
+  private def cmdKeyMetricsConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.metrics"
 
   private def loadConfigDefault(key: String) = loadConfig(key)
     .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))

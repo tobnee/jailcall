@@ -1,5 +1,6 @@
 package net.atinu.akka.defender.internal
 
+import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ FunSuite, Matchers }
 import net.atinu.akka.defender._
@@ -27,9 +28,22 @@ class ConfigTest extends FunSuite with Matchers {
             |      dispatcher = "foo"
         |        }
         |      }
+        |      metrics {
+        |        rolling-stats = {
+        |          window = 11 seconds
+        |          buckets = 11
+        |        }
+        |      }
         |    }
         |    load-y {
         |
+        |    }
+        |    load-s {
+        |     metrics {
+        |        rolling-stats = {
+        |          buckets = 9
+        |        }
+        |      }
         |    }
         |  }
         |}""".stripMargin
@@ -82,5 +96,29 @@ class ConfigTest extends FunSuite with Matchers {
     val cfg = refCfg.withFallback(customCfg2)
     val builder = new MsgConfigBuilder(cfg)
     builder.loadConfigForKey("load-data".asKey).get.isolation.custom should equal(None)
+  }
+
+  test("load default metrics info") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    val metrics: MetricsConfig = builder.loadConfigForKey("foo".asKey).get.metrics
+    metrics.rollingStatsBuckets should equal(10)
+    metrics.rollingStatsWindowDuration should equal(10 seconds)
+  }
+
+  test("load custom metrics info") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    val metrics: MetricsConfig = builder.loadConfigForKey("load-data".asKey).get.metrics
+    metrics.rollingStatsBuckets should equal(11)
+    metrics.rollingStatsWindowDuration should equal(11 seconds)
+  }
+
+  test("fail for invalid rolling-stats settings") {
+    val cfg = refCfg.withFallback(customCfg)
+    val builder = new MsgConfigBuilder(cfg)
+    val metrics = builder.loadConfigForKey("load-s".asKey)
+    metrics should be a 'failure
+    metrics.failed.get shouldBe a[ConfigurationException]
   }
 }

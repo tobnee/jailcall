@@ -22,7 +22,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   import akka.pattern.pipe
 
-  val statsActor = statsActorForKey(msgKey)
+  val statsActor = startStatsActor()
   var stats = CmdKeyStatsSnapshot.initial
   val resetTimeoutMillis = cfg.circuitBreaker.resetTimeout.toMillis
 
@@ -208,9 +208,8 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def statsActorForKey(cmdKey: DefendCommandKey) = {
-    val cmdKeyName = cmdKey.name
-    context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"cmd-key-stats")
+  def startStatsActor() = {
+    context.actorOf(AkkaDefendCmdKeyStatsActor.props(msgKey, cfg.metrics), s"cmd-key-stats")
   }
 
   def waitForApproval() = {
