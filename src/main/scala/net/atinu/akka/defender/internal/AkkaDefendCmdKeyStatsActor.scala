@@ -63,7 +63,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey) extends Actor with Ac
       execTime.getValueAtPercentile(99),
       rollingStats.sum
     )
-    log.debug("current cmd key stats {}", stats)
+    log.debug("{}: current cmd key stats {}", cmdKey, stats)
     context.parent ! stats
   }
 }

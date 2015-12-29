@@ -4,7 +4,7 @@ import akka.actor.{ Status, ActorRef, ActorLogging, Actor, Props }
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreationFailed, CmdExecutorCreated, CreateCmdExecutor }
 
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Success, Failure }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 

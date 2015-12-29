@@ -4,6 +4,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.defend.DefendBatchingExecutor
+import akka.event.Logging.MDC
 import akka.pattern.CircuitBreakerOpenException
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
@@ -13,33 +14,34 @@ import net.atinu.akka.defender.internal.util.CallStats
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Success }
 import scala.concurrent.duration._
 
 class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
-    extends Actor with ActorLogging with Stash {
+    extends Actor with DiagnosticActorLogging with Stash {
 
   import akka.pattern.pipe
 
   val statsActor: ActorRef = statsActorForKey(msgKey)
   var stats = CmdKeyStatsSnapshot.initial
+  val resetTimeoutMillis = cfg.circuitBreaker.resetTimeout.toMillis
 
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
     case msg: AsyncDefendExecution[_] =>
       import context.dispatcher
-      callAsync(msg, isHalfOpen) pipeTo sender()
+      callAsync(msg, isFallback = false, isHalfOpen) pipeTo sender()
 
     case msg: SyncDefendExecution[_] =>
       import context.dispatcher
-      callSync(msg, isHalfOpen) pipeTo sender()
+      callSync(msg, isFallback = false, isHalfOpen) pipeTo sender()
 
     case FallbackAction(promise, msg: AsyncDefendExecution[_]) =>
-      fallbackFuture(promise, callAsync(msg, isHalfOpen))
+      fallbackFuture(promise, callAsync(msg, isFallback = true, isHalfOpen))
 
     case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
-      fallbackFuture(promise, callSync(msg, isHalfOpen))
+      fallbackFuture(promise, callSync(msg, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
       stats = snap
@@ -64,10 +66,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def receiveHalfOpen: Receive = {
     case ClosingCircuitBreakerFailed =>
-      log.debug("circuit closed test call failed for {}", msgKey.name)
+      log.debug("{}: closing circuit breaker failed", msgKey.name)
       openCircuitBreaker()
       unstashAll()
     case ClosingCircuitBreakerSucceed =>
+      log.debug("{}: closing circuit breaker succeeded", msgKey.name)
       context.become(receiveClosed(isHalfOpen = false))
       unstashAll()
     case _ =>
@@ -77,22 +80,37 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def fallbackFuture(promise: Promise[Any], res: Future[_]) =
     promise.completeWith(res)
 
-  def callSync(msg: SyncDefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
-    if (dispatcherHolder.isDefault) {
-      log.warning("Use of default dispatcher for command {}, consider using a custom one", msg.cmdKey)
-    }
+  def callSync(msg: SyncDefendExecution[_], isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+    cmdExecDebugMsg(isAsync = false, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: AsyncDefendExecution[_], breakOnSingleFailure: Boolean): Future[Any] = {
+  def callAsync(msg: AsyncDefendExecution[_], isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+    cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, msg.execute)
+  }
+
+  def cmdExecDebugMsg(isAsync: Boolean, isFallback: Boolean, breakOnSingleFailure: Boolean) = {
+    def halfOpenMsg =
+      if (breakOnSingleFailure) " in half-open mode"
+      else " in closed mode"
+
+    def isFallbackMsg =
+      if (isFallback) " fallback" else ""
+
+    def isAsyncMsg =
+      if (isAsync) "async" else "sync"
+
+    if (log.isDebugEnabled) {
+      log.debug("{}: execute {}{} command{}", msgKey, isAsyncMsg, isFallbackMsg, halfOpenMsg)
+    }
   }
 
   def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
     if (breakOnSingleFailure) waitForApproval()
     val (startTime, exec) = callThrough(execute)
     val recatExec = applyCategorization(msg, exec)
-    updateCallStats(startTime, recatExec)
+    updateCallStats(msg.cmdKey, startTime, recatExec)
     if (breakOnSingleFailure) checkForSingleFailure(recatExec)
     fallbackIfDefined(msg, recatExec)
   }
@@ -163,18 +181,25 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def updateCallStats(startTime: Long, exec: Future[Any]): Unit = {
+  def updateCallStats(cmdKey: DefendCommandKey, startTime: Long, exec: Future[Any]): Unit = {
     import context.dispatcher
     exec.onComplete {
       case Success(_) =>
         val t = System.currentTimeMillis() - startTime
+        log.debug("{}: command execution succeeded", cmdKey)
         statsActor ! ReportSuccCall(t)
       case Failure(v) =>
         val t = System.currentTimeMillis() - startTime
         val msg = v match {
-          case e: DefendBadRequestException => ReportBadRequestCall(t)
-          case e: TimeoutException => ReportTimeoutCall(t)
-          case e: CircuitBreakerOpenException => ReportCircuitBreakerOpenCall
+          case e: DefendBadRequestException =>
+            log.debug("{}: command execution failed -> bad request", cmdKey)
+            ReportBadRequestCall(t)
+          case e: TimeoutException =>
+            log.debug("{}: command execution failed -> timeout", cmdKey)
+            ReportTimeoutCall(t)
+          case e: CircuitBreakerOpenException =>
+            log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
+            ReportCircuitBreakerOpenCall
           case e => ReportErrorCall(t)
         }
         statsActor ! msg
@@ -183,11 +208,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def statsActorForKey(cmdKey: DefendCommandKey) = {
     val cmdKeyName = cmdKey.name
-    context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"stats-$cmdKeyName")
+    context.actorOf(AkkaDefendCmdKeyStatsActor.props(cmdKey), s"cmd-key-stats")
   }
 
   def waitForApproval() = {
-    log.debug("{} become half open", msgKey.name)
+    log.debug("{}: become half open", msgKey.name)
     context.become(receiveHalfOpen)
   }
 
@@ -216,13 +241,13 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def openCircuitBreaker(): Unit = {
     import context.dispatcher
-    log.debug("{} open circuit breaker for {}", msgKey.name, cfg.circuitBreaker.resetTimeout)
+    log.debug("{}: open circuit breaker for {}, calls will fail fast", msgKey.name, cfg.circuitBreaker.resetTimeout)
     context.system.scheduler.scheduleOnce(cfg.circuitBreaker.resetTimeout, self, TryCloseCircuitBreaker)
     context.become(receiveOpen(calcCircuitBreakerEndTime))
   }
 
   def calcCircuitBreakerEndTime: Long = {
-    System.currentTimeMillis() + cfg.circuitBreaker.resetTimeout.toMillis
+    System.currentTimeMillis() + resetTimeoutMillis
   }
 
   def calcCircuitBreakerOpenRemaining(end: Long) = {
@@ -230,6 +255,10 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     if (end > 0) r.millis
     else 0.millis
   }
+
+  val staticMdcInfo = Map("cmdKey" -> msgKey.name)
+
+  override def mdc(currentMessage: Any): MDC = staticMdcInfo
 
 }
 
