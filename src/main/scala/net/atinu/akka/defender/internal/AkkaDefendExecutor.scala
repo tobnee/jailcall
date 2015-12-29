@@ -54,10 +54,10 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
     case msg: DefendExecution[_, _] =>
       import context.dispatcher
-      callBreak(calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
+      callBreak(msg, calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
-    case FallbackAction(promise, _) =>
-      promise.completeWith(callBreak(calcCircuitBreakerOpenRemaining(end)))
+    case FallbackAction(promise, cmd) =>
+      promise.completeWith(callBreak(cmd, calcCircuitBreakerOpenRemaining(end)))
 
     case snap: CmdKeyStatsSnapshot => {
       stats = snap
@@ -158,8 +158,10 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case _ => exec
   }
 
-  def callBreak[T](remainingDuration: FiniteDuration): Future[T] =
+  def callBreak[T](cmd: NamedCommand, remainingDuration: FiniteDuration): Future[T] = {
+    log.debug("{}: fail call due to open circuit breaker (remaining duration: {})", cmd.cmdKey, remainingDuration)
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
+  }
 
   def fallbackIfDefined(msg: DefendExecution[_, _], exec: Future[Any]): Future[Any] = msg match {
     case static: StaticFallback[_] =>
