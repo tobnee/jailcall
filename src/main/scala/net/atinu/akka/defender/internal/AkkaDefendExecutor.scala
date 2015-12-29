@@ -22,7 +22,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   import akka.pattern.pipe
 
-  val statsActor: ActorRef = statsActorForKey(msgKey)
+  val statsActor = statsActorForKey(msgKey)
   var stats = CmdKeyStatsSnapshot.initial
   val resetTimeoutMillis = cfg.circuitBreaker.resetTimeout.toMillis
 

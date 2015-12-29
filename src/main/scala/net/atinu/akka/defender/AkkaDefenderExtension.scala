@@ -9,6 +9,7 @@ import akka.util.Timeout
 import com.typesafe.config.Config
 import net.atinu.akka.defender.internal.AkkaDefendActor
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
@@ -37,43 +38,47 @@ class AkkaDefenderExtension(val system: ExtendedActorSystem) extends Extension w
   private val rootActorName = config.getString("defender.root-actor-name")
   private val defenderRef = system.systemActorOf(AkkaDefendActor.props, rootActorName)
 
-  val defender = new AkkaDefender(defenderRef, system.dispatcher)
+  def loadMsDuration(key: String) = FiniteDuration(config.getDuration(key, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+
+  private val maxCallDuration = loadMsDuration("defender.max-call-duration")
+  private val maxCreateTime = loadMsDuration("defender.create-timeout")
+  val defender = new AkkaDefender(defenderRef, maxCreateTime, maxCallDuration, system.dispatcher)
 
   def lookup(): ExtensionId[_ <: Extension] = AkkaDefender
 }
 
-class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContext) {
+class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, ec: ExecutionContext) {
 
   import akka.pattern.ask
 
-  private val createTimeout = Timeout(1, TimeUnit.SECONDS)
-  private val execTimeout = Timeout(60, TimeUnit.SECONDS)
+  private val createTimeout = new Timeout(maxCreateTime)
+  private val execTimeout = new Timeout(maxCallDuration)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
-    val name: String = cmd.cmdKey.name
-    if (refCache.contains(name)) {
-      refCache.get(name) ! cmd
+    val cmdKey = cmd.cmdKey.name
+    if (refCache.contains(cmdKey)) {
+      refCache.get(cmdKey) ! cmd
     } else {
       askCreateExecutor(cmd).onComplete {
         case Success(created: CmdExecutorCreated) =>
-          val executor: ActorRef = created.executor
+          val executor = created.executor
           executor ! cmd
-          refCache.put(name, executor)
+          refCache.put(cmdKey, executor)
         case Failure(e) => // do nothing
       }(ec)
     }
   }
 
   def executeToFuture[R](cmd: DefendExecution[R, _])(implicit tag: ClassTag[R]): Future[R] = {
-    val name: String = cmd.cmdKey.name
+    val cmdKey = cmd.cmdKey.name
     def askInternal(ref: ActorRef) = ref.ask(cmd)(execTimeout).mapTo[R]
-    if (refCache.contains(name)) {
-      askInternal(refCache.get(name))
+    if (refCache.contains(cmdKey)) {
+      askInternal(refCache.get(cmdKey))
     } else {
       askCreateExecutor(cmd).flatMap { created =>
-        val executor: ActorRef = created.executor
-        refCache.put(name, executor)
+        val executor = created.executor
+        refCache.put(cmdKey, executor)
         askInternal(executor)
       }(ec)
     }
