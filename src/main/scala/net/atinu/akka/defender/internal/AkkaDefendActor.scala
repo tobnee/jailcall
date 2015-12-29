@@ -1,8 +1,10 @@
 package net.atinu.akka.defender.internal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
+import akka.actor.{ Status, ActorRef, ActorLogging, Actor, Props }
 import net.atinu.akka.defender._
-import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
+import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreationFailed, CmdExecutorCreated, CreateCmdExecutor }
+
+import scala.util.{ Try, Success, Failure }
 
 private[defender] class AkkaDefendActor extends Actor with ActorLogging {
 
@@ -29,18 +31,27 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
       }
   }
 
-  def createExecutor(cmdKey: DefendCommandKey, needsIsolation: Boolean) = {
-    sender() ! CmdExecutorCreated(cmdKey, executorFor(cmdKey, needsIsolation))
+  def createExecutor(cmdKey: DefendCommandKey, needsIsolation: Boolean): Unit = {
+    sender() ! (executorFor(cmdKey, needsIsolation) match {
+      case Success(ref) => CmdExecutorCreated(cmdKey, ref)
+      case Failure(e) =>
+        val errorMsg = s"Creation of DefendCommand executor failed for command key: $cmdKey"
+        log.error(e, errorMsg)
+        Status.Failure(CmdExecutorCreationFailed(e, errorMsg))
+    })
   }
 
-  def executorFor(cmdKey: DefendCommandKey, needsIsolation: Boolean): ActorRef = {
-    msgKeyToExecutor.getOrElseUpdate(cmdKey.name, buildCmdActor(cmdKey, needsIsolation))
+  def executorFor(cmdKey: DefendCommandKey, needsIsolation: Boolean) = {
+    if (msgKeyToExecutor.isDefinedAt(cmdKey.name)) Success(msgKeyToExecutor(cmdKey.name))
+    else buildCmdActor(cmdKey, needsIsolation)
   }
 
-  private def buildCmdActor(msgKey: DefendCommandKey, needsIsolation: Boolean): ActorRef = {
+  private def buildCmdActor(msgKey: DefendCommandKey, needsIsolation: Boolean) = {
     val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
-    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg, log, needsIsolation)
-    context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, dispatcherHolder))
+    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg.isolation, log, needsIsolation)
+    dispatcherHolder.map { v =>
+      context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, v))
+    }
   }
 }
 
@@ -51,4 +62,6 @@ object AkkaDefendActor {
   case class CreateCmdExecutor(cmdKey: DefendCommandKey, firstCmd: Option[DefendExecution[_, _]])
 
   case class CmdExecutorCreated(cmdKey: DefendCommandKey, executor: ActorRef)
+
+  case class CmdExecutorCreationFailed(e: Throwable, msg: String) extends RuntimeException(msg, e)
 }

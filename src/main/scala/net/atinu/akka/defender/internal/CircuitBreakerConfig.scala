@@ -21,6 +21,8 @@ private[internal] case class CustomIsolationConfig(dispatcherName: String)
 object IsolationConfig {
 
   def default = IsolationConfig(None)
+
+  def fromDispatcherName(name: String) = IsolationConfig(Some(CustomIsolationConfig(name)))
 }
 
 private[internal] case class IsolationConfig(custom: Option[CustomIsolationConfig])

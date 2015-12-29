@@ -5,24 +5,22 @@ import akka.event.LoggingAdapter
 import net.atinu.akka.defender.{ AkkaDefender, DefendCommandKey }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
+import scala.util.{ Success, Try }
+
 object DispatcherLookup {
 
-  case class DispatcherHolder(dispatcher: MessageDispatcher, isDefault: Boolean)
+  case class DispatcherHolder(dispatcher: MessageDispatcher, isDefault: Boolean) {
+
+    def isCustom = !isDefault
+  }
 }
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(msgKey: DefendCommandKey, msgConfig: MsgConfig, log: LoggingAdapter, needsIsolation: Boolean): DispatcherHolder = {
-    msgConfig.isolation.custom match {
-      case Some(cfg) if dispatchers.hasDispatcher(cfg.dispatcherName) =>
-        DispatcherHolder(dispatchers.lookup(cfg.dispatcherName), isDefault = false)
-
+  def lookupDispatcher(msgKey: DefendCommandKey, isoConfig: IsolationConfig, log: LoggingAdapter, needsIsolation: Boolean): Try[DispatcherHolder] = Try {
+    isoConfig.custom match {
       case Some(cfg) =>
-        log.warning(
-          "dispatcher {} was configured for cmd {} but not available, fallback to default dispatcher",
-          cfg.dispatcherName, msgKey.name
-        )
-        DispatcherHolder(dispatchers.defaultGlobalDispatcher, isDefault = true)
+        DispatcherHolder(dispatchers.lookup(cfg.dispatcherName), isDefault = false)
 
       case _ if needsIsolation =>
         DispatcherHolder(dispatchers.lookup(AkkaDefender.DEFENDER_DISPATCHER_ID), isDefault = false)
