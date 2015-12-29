@@ -60,7 +60,7 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, ec: ExecutionContex
           val executor: ActorRef = created.executor
           executor ! cmd
           refCache.put(name, executor)
-        case Failure(e) => throw e
+        case Failure(e) => // do nothing
       }(ec)
     }
   }

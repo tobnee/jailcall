@@ -51,36 +51,36 @@ class ConfigTest extends FunSuite with Matchers {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(refCfg)
     val defCbConfig = builder.loadConfigForKey("foo".asKey)
-    defCbConfig.circuitBreaker should equal(defaultCbConfig)
+    defCbConfig.get.circuitBreaker should equal(defaultCbConfig)
   }
 
   test("non specified key results in default config") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-x".asKey).circuitBreaker should equal(defaultCbConfig)
+    builder.loadConfigForKey("load-x".asKey).get.circuitBreaker should equal(defaultCbConfig)
   }
 
   test("specified key partial options results in default config fallback") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-y".asKey).circuitBreaker should equal(defaultCbConfig)
+    builder.loadConfigForKey("load-y".asKey).get.circuitBreaker should equal(defaultCbConfig)
   }
 
   test("load a custom config if specified") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-data".asKey).circuitBreaker should equal(CircuitBreakerConfig(false, 21, 60, 3.seconds, 2.minutes))
+    builder.loadConfigForKey("load-data".asKey).get.circuitBreaker should equal(CircuitBreakerConfig(false, 21, 60, 3.seconds, 2.minutes))
   }
 
   test("load a dispatcher if specified") {
     val cfg = refCfg.withFallback(customCfg)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-data".asKey).isolation.custom should equal(Some(CustomIsolationConfig("foo")))
+    builder.loadConfigForKey("load-data".asKey).get.isolation.custom should equal(Some(CustomIsolationConfig("foo")))
   }
 
   test("ignore dispatcher if not specified") {
     val cfg = refCfg.withFallback(customCfg2)
     val builder = new MsgConfigBuilder(cfg)
-    builder.loadConfigForKey("load-data".asKey).isolation.custom should equal(None)
+    builder.loadConfigForKey("load-data".asKey).get.isolation.custom should equal(None)
   }
 }

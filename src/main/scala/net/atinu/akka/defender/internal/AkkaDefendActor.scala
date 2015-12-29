@@ -18,7 +18,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
     case CreateCmdExecutor(cmdKey, Some(exec)) =>
       val needsIsolation = exec match {
         case _: AsyncDefendExecution[_] => false
-        case _: SyncDefendExecution[_] => true
+        case _ => true
       }
       createExecutor(cmdKey, needsIsolation = needsIsolation)
 
@@ -47,11 +47,10 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   }
 
   private def buildCmdActor(msgKey: DefendCommandKey, needsIsolation: Boolean) = {
-    val cfg = cbConfigBuilder.loadConfigForKey(msgKey)
-    val dispatcherHolder = dispatcherLookup.lookupDispatcher(msgKey, cfg.isolation, log, needsIsolation)
-    dispatcherHolder.map { v =>
-      context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, v))
-    }
+    for {
+      cfg <- cbConfigBuilder.loadConfigForKey(msgKey)
+      dispatcherHolder <- dispatcherLookup.lookupDispatcher(msgKey, cfg.isolation, log, needsIsolation)
+    } yield context.actorOf(AkkaDefendExecutor.props(msgKey, cfg, dispatcherHolder))
   }
 }
 

@@ -2,6 +2,7 @@ package net.atinu.akka.defender.internal
 
 import java.util.concurrent.TimeUnit
 
+import akka.ConfigurationException
 import akka.actor.Scheduler
 import akka.dispatch.{ Dispatchers, MessageDispatcher }
 import akka.event.LoggingAdapter
@@ -11,6 +12,7 @@ import net.atinu.akka.defender.{ AkkaDefender, DefendCommandKey }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 private[internal] case class MsgConfig(circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig)
 
@@ -29,23 +31,23 @@ private[internal] case class IsolationConfig(custom: Option[CustomIsolationConfi
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
-  def loadConfigForKey(key: DefendCommandKey): MsgConfig = {
-    MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key))
+  def loadConfigForKey(key: DefendCommandKey): Try[MsgConfig] = {
+    Try {
+      MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key))
+    }
   }
 
-  private val defaultCbconfigValue = loadConfig("defender.command.default.circuit-breaker")
-    .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
+  private val defaultCbConfigValue = loadConfigDefault("defender.command.default.circuit-breaker")
 
-  private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbconfigValue)
+  private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbConfigValue)
 
-  private val defaultIsolationConfigValue = loadConfig("defender.command.default.isolation")
-    .getOrElse(throw new IllegalStateException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
+  private val defaultIsolationConfigValue = loadConfigDefault("defender.command.default.isolation")
 
   private val defaultIsolationConfig = forceLoadIsolationConfig(defaultIsolationConfigValue)
 
   private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
     loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
-      .map(_.withFallback(defaultCbconfigValue))).getOrElse(defaultCbConfig)
+      .map(_.withFallback(defaultCbConfigValue))).getOrElse(defaultCbConfig)
 
   private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
 
@@ -89,6 +91,9 @@ private[internal] class MsgConfigBuilder(config: Config) {
       )
     }
   }
+
+  private def loadConfigDefault(key: String) = loadConfig(key)
+    .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
   private def loadConfig(path: String): Option[Config] = {
     if (config.hasPath(path)) Some(config.getConfig(path)) else None
