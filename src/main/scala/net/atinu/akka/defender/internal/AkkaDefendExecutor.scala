@@ -29,19 +29,19 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case msg: AsyncDefendExecution[_] =>
+    case DefendAction(startTime, msg: AsyncDefendExecution[_]) =>
       import context.dispatcher
-      callAsync(msg, isFallback = false, isHalfOpen) pipeTo sender()
+      callAsync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
 
-    case msg: SyncDefendExecution[_] =>
+    case DefendAction(startTime, msg: SyncDefendExecution[_]) =>
       import context.dispatcher
-      callSync(msg, isFallback = false, isHalfOpen) pipeTo sender()
+      callSync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
 
-    case FallbackAction(promise, msg: AsyncDefendExecution[_]) =>
-      fallbackFuture(promise, callAsync(msg, isFallback = true, isHalfOpen))
+    case FallbackAction(promise, startTime, msg: AsyncDefendExecution[_]) =>
+      fallbackFuture(promise, callAsync(msg, startTime, isFallback = true, isHalfOpen))
 
-    case FallbackAction(promise, msg: SyncDefendExecution[_]) =>
-      fallbackFuture(promise, callSync(msg, isFallback = true, isHalfOpen))
+    case FallbackAction(promise, startTime, msg: SyncDefendExecution[_]) =>
+      fallbackFuture(promise, callSync(msg, startTime, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
       stats = snap
@@ -52,11 +52,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case msg: DefendExecution[_, _] =>
+    case DefendAction(_, msg: DefendExecution[_, _]) =>
       import context.dispatcher
       callBreak(msg, calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
-    case FallbackAction(promise, cmd) =>
+    case FallbackAction(promise, startTime, cmd) =>
       promise.completeWith(callBreak(cmd, calcCircuitBreakerOpenRemaining(end)))
 
     case snap: CmdKeyStatsSnapshot => {
@@ -80,14 +80,14 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def fallbackFuture(promise: Promise[Any], res: Future[_]) =
     promise.completeWith(res)
 
-  def callSync(msg: SyncDefendExecution[_], isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+  def callSync(msg: SyncDefendExecution[_], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
     cmdExecDebugMsg(isAsync = false, isFallback, breakOnSingleFailure)
-    execFlow(msg, breakOnSingleFailure, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
+    execFlow(msg, breakOnSingleFailure, totalStartTime, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: AsyncDefendExecution[_], isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+  def callAsync(msg: AsyncDefendExecution[_], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
     cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
-    execFlow(msg, breakOnSingleFailure, msg.execute)
+    execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }
 
   def cmdExecDebugMsg(isAsync: Boolean, isFallback: Boolean, breakOnSingleFailure: Boolean) = {
@@ -106,11 +106,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, execute: => Future[Any]): Future[Any] = {
+  def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[Any]): Future[Any] = {
     if (breakOnSingleFailure) waitForApproval()
-    val (startTime, exec) = callThrough(execute)
+    val (execStartTime, exec) = callThrough(execute)
     val recatExec = applyCategorization(msg, exec)
-    updateCallStats(msg.cmdKey, startTime, recatExec)
+    updateCallStats(msg.cmdKey, execStartTime, totalStartTime, recatExec)
     if (breakOnSingleFailure) checkForSingleFailure(recatExec)
     fallbackIfDefined(msg, recatExec)
   }
@@ -169,7 +169,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case dynamic: CmdFallback[_] =>
       fallbackIfValidRequest(exec) { err =>
         val fallbackPromise = Promise.apply[Any]()
-        self ! FallbackAction(fallbackPromise, dynamic.fallback)
+        self ! FallbackAction(fallbackPromise, System.currentTimeMillis(), dynamic.fallback)
         fallbackPromise.future
       }
     case _ => exec
@@ -183,28 +183,32 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def updateCallStats(cmdKey: DefendCommandKey, startTime: Long, exec: Future[Any]): Unit = {
+  def updateCallStats(cmdKey: DefendCommandKey, startTimeExec: Long, totalStartTime: Long, exec: Future[Any]): Unit = {
     import context.dispatcher
     exec.onComplete {
       case Success(_) =>
         setMdcContext()
-        val t = System.currentTimeMillis() - startTime
+        val now: Long = System.currentTimeMillis()
+        val durationExec = now - startTimeExec
+        val durationTotal = now - totalStartTime
         log.debug("{}: command execution succeeded", cmdKey)
-        statsActor ! ReportSuccCall(t)
+        statsActor ! ReportSuccCall(durationExec, durationTotal)
       case Failure(v) =>
         setMdcContext()
-        val t = System.currentTimeMillis() - startTime
+        val now: Long = System.currentTimeMillis()
+        val durationExec = now - startTimeExec
+        val durationTotal = now - totalStartTime
         val msg = v match {
           case e: DefendBadRequestException =>
             log.debug("{}: command execution failed -> bad request", cmdKey)
-            ReportBadRequestCall(t)
+            ReportBadRequestCall(durationExec, durationTotal)
           case e: TimeoutException =>
             log.debug("{}: command execution failed -> timeout", cmdKey)
-            ReportTimeoutCall(t)
+            ReportTimeoutCall(durationExec, durationTotal)
           case e: CircuitBreakerOpenException =>
             log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
             ReportCircuitBreakerOpenCall
-          case e => ReportErrorCall(t)
+          case e => ReportErrorCall(durationExec, durationTotal)
         }
         statsActor ! msg
     }

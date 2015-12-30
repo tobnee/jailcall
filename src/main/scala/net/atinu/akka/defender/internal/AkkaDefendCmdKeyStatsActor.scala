@@ -11,6 +11,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
   import context.dispatcher
 
   val execTime = new Histogram(600000L, 1)
+  val totalTime = new Histogram(600000L, 1)
   val rollingStats = RollingStats.withSize(metrics.rollingStatsBuckets)
   var updateSinceLastSnapshot = false
 
@@ -19,21 +20,22 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
 
   def receive = {
     case r: ReportSuccCall =>
-      updateStats(r.execTimeMs, r.metricType)
+      updateStats(r.execTimeMs, r.totalTimeMs, r.metricType)
     case r: ReportErrorCall =>
-      updateStats(r.execTimeMs, r.metricType)
+      updateStats(r.execTimeMs, r.totalTimeMs, r.metricType)
     case ReportCircuitBreakerOpenCall =>
       updateStats(ReportCircuitBreakerOpenCall.metricType)
     case r: ReportTimeoutCall =>
-      updateStats(r.execTimeMs, r.metricType)
+      updateStats(r.execTimeMs, r.totalTimeMs, r.metricType)
     case r: ReportBadRequestCall =>
-      updateStats(r.execTimeMs, r.metricType)
+      updateStats(r.execTimeMs, r.totalTimeMs, r.metricType)
     case RollStats =>
       rollAndNotifyIfUpdated()
   }
 
-  def updateStats(timeMs: Long, metricType: MetricType): Unit = {
-    execTime.recordValue(timeMs)
+  def updateStats(execTimeMs: Long, totalTimeMs: Long, metricType: MetricType): Unit = {
+    execTime.recordValue(execTimeMs)
+    totalTime.recordValue(totalTimeMs)
     updateStats(metricType)
     updateSinceLastSnapshot = true
   }
@@ -58,12 +60,20 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
 
   def publishSnapshotUpdate(): Unit = {
     val stats = CmdKeyStatsSnapshot(
+      execTime.getMean,
       execTime.getValueAtPercentile(50),
       execTime.getValueAtPercentile(95),
       execTime.getValueAtPercentile(99),
       rollingStats.sum
     )
-    log.debug("{}: current cmd key stats {}", cmdKey, stats)
+    def overhead = if (log.isDebugEnabled) {
+      val meanExec: Double = execTime.getMean
+      val meanTotal: Double = totalTime.getMean
+      val diffMeanPercent = if (meanTotal == 0d) 0 else (1 - meanExec / meanTotal) * 100
+      val diffMeanTotal = meanTotal - meanExec
+      s"($diffMeanTotal ms, $diffMeanPercent %)"
+    }
+    log.debug("{}: current cmd key stats {}, overhead defend exec {}", cmdKey, stats, overhead)
     context.parent ! stats
   }
 }
@@ -73,11 +83,11 @@ object AkkaDefendCmdKeyStatsActor {
   def props(cmdKey: DefendCommandKey, metrics: MetricsConfig) = Props(new AkkaDefendCmdKeyStatsActor(cmdKey, metrics))
 
   sealed abstract class MetricReportCommand(val metricType: MetricType)
-  case class ReportSuccCall(execTimeMs: Long) extends MetricReportCommand(Succ)
-  case class ReportErrorCall(execTimeMs: Long) extends MetricReportCommand(Err)
+  case class ReportSuccCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(Succ)
+  case class ReportErrorCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(Err)
   case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpen)
-  case class ReportTimeoutCall(execTimeMs: Long) extends MetricReportCommand(Timeout)
-  case class ReportBadRequestCall(execTimeMs: Long) extends MetricReportCommand(BadRequest)
+  case class ReportTimeoutCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(Timeout)
+  case class ReportBadRequestCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(BadRequest)
 
   sealed trait MetricType
   case object Succ extends MetricType

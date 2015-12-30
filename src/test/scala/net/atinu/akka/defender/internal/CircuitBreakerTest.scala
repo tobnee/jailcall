@@ -22,9 +22,9 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
 
-    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
-    ref ! DefendCommand.apply(key = "nfoo", Future.successful("na"))
+    ref ! DefendAction.now(DefendCommand.apply(key = "nfoo", Future.successful("na")))
     expectMsg("na")
   }
 
@@ -35,9 +35,9 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
 
-    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
-    ref ! DefendCommand.apply(key = "nfoo2", Future.successful("na"))
+    ref ! DefendAction.now(DefendCommand.apply(key = "nfoo2", Future.successful("na")))
     expectMsg("na")
   }
 
@@ -62,19 +62,19 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
 
-    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
-    ref ! DefendCommand.apply(key = "foo", Future.successful("a"))
+    ref ! DefendAction.now(DefendCommand.apply(key = "foo", Future.successful("a")))
   }
 
   test("cb closed / halfopen / open circle") {
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = DefendCommandKey("foo2")
-    val cmd = DefendCommand.apply(key = commandKey.name, Future.successful("b"))
+    val cmd = DefendAction.now(DefendCommand.apply(key = commandKey.name, Future.successful("b")))
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {
@@ -91,11 +91,11 @@ class CircuitBreakerTest extends ActorTest("DefenderTest", DefenderTest.config) 
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = DefendCommandKey("foo2")
     val failure = new IllegalStateException("naa")
-    val cmd = DefendCommand.apply(key = commandKey.name, Future.failed(failure))
+    val cmd = DefendAction.now(DefendCommand.apply(key = commandKey.name, Future.failed(failure)))
     val ref = system.actorOf(
       AkkaDefendExecutor.props(commandKey, thisCfg, dispatcherHolder)
     )
-    ref ! CmdKeyStatsSnapshot(median = 0, p95Time = 0, p99Time = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {

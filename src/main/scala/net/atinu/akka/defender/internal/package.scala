@@ -8,19 +8,27 @@ import scala.concurrent.Promise
 
 package object internal {
 
-  private[internal] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
+  private[defender] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
     dispatcherHolder: DispatcherHolder)
 
-  private[internal] case object GetKeyConfigs
+  private[defender] case object GetKeyConfigs
 
-  private[internal] case class FallbackAction(fallbackPromise: Promise[Any], cmd: DefendExecution[_, _])
+  private[defender] case class DefendAction(startTime: Long, cmd: DefendExecution[_, _])
 
-  private[internal] case class CmdMetrics(name: DefendCommandKey)
+  object DefendAction {
 
-  case class CmdKeyStatsSnapshot(median: Long, p95Time: Long, p99Time: Long, callStats: CallStats) {
+    def now(cmd: DefendExecution[_, _]) = DefendAction(System.currentTimeMillis(), cmd)
+  }
+
+  private[defender] case class FallbackAction(fallbackPromise: Promise[Any], startTime: Long, cmd: DefendExecution[_, _])
+
+  private[defender] case class CmdMetrics(name: DefendCommandKey)
+
+  case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Time: Long, callStats: CallStats) {
 
     override def toString = {
       Vector(
+        "mean" -> mean,
         "callMedian" -> median,
         "callP95" -> p95Time,
         "callP99" -> p99Time,
@@ -35,7 +43,7 @@ package object internal {
 
   object CmdKeyStatsSnapshot {
 
-    val initial = CmdKeyStatsSnapshot(0, 0, 0, CallStats(0, 0, 0, 0, 0))
+    val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
   }
 
 }

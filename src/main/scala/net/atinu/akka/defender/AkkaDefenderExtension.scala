@@ -7,7 +7,7 @@ import akka.defend.AkkaDefendDispatcherConfigurator
 import akka.dispatch.Dispatchers
 import akka.util.Timeout
 import com.typesafe.config.Config
-import net.atinu.akka.defender.internal.AkkaDefendActor
+import net.atinu.akka.defender.internal.{ DefendAction, AkkaDefendActor }
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
@@ -56,14 +56,15 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: Fini
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
+    val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
     if (refCache.contains(cmdKey)) {
-      refCache.get(cmdKey) ! cmd
+      refCache.get(cmdKey) ! DefendAction(startTime, cmd)
     } else {
       askCreateExecutor(cmd).onComplete {
         case Success(created: CmdExecutorCreated) =>
           val executor = created.executor
-          executor ! cmd
+          executor ! DefendAction(startTime, cmd)
           refCache.put(cmdKey, executor)
         case Failure(e) => // do nothing
       }(ec)
@@ -71,8 +72,9 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: Fini
   }
 
   def executeToFuture[R](cmd: DefendExecution[R, _])(implicit tag: ClassTag[R]): Future[R] = {
+    val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
-    def askInternal(ref: ActorRef) = ref.ask(cmd)(execTimeout).mapTo[R]
+    def askInternal(ref: ActorRef) = ref.ask(DefendAction(startTime, cmd))(execTimeout).mapTo[R]
     if (refCache.contains(cmdKey)) {
       askInternal(refCache.get(cmdKey))
     } else {
