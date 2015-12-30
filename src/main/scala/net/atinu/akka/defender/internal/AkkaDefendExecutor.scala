@@ -187,10 +187,12 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     import context.dispatcher
     exec.onComplete {
       case Success(_) =>
+        setMdcContext()
         val t = System.currentTimeMillis() - startTime
         log.debug("{}: command execution succeeded", cmdKey)
         statsActor ! ReportSuccCall(t)
       case Failure(v) =>
+        setMdcContext()
         val t = System.currentTimeMillis() - startTime
         val msg = v match {
           case e: DefendBadRequestException =>
@@ -258,6 +260,8 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   val staticMdcInfo = Map("cmdKey" -> msgKey.name)
+
+  def setMdcContext() = log.mdc(staticMdcInfo)
 
   override def mdc(currentMessage: Any): MDC = staticMdcInfo
 
