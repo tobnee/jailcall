@@ -14,6 +14,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
   val totalTime = new Histogram(600000L, 1)
   val rollingStats = RollingStats.withSize(metrics.rollingStatsBuckets)
   var updateSinceLastSnapshot = false
+  var currentStats = CmdKeyStatsSnapshot.initial
 
   val interval = metrics.rollingStatsWindowDuration / metrics.rollingStatsBuckets
   context.system.scheduler.schedule(interval, interval, self, RollStats)
@@ -31,6 +32,8 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
       updateStats(r.execTimeMs, r.totalTimeMs, r.metricType)
     case RollStats =>
       rollAndNotifyIfUpdated()
+    case GetCurrentStats =>
+      sender() ! currentStats
   }
 
   def updateStats(execTimeMs: Long, totalTimeMs: Long, metricType: MetricType): Unit = {
@@ -77,6 +80,7 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
     }
     log.debug("{}: current cmd key stats {}, overhead defend exec {}", cmdKey, stats, overhead)
     context.parent ! stats
+    currentStats = stats
   }
 }
 
@@ -90,6 +94,8 @@ object AkkaDefendCmdKeyStatsActor {
   case object ReportCircuitBreakerOpenCall extends MetricReportCommand(CircuitBreakerOpen)
   case class ReportTimeoutCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(Timeout)
   case class ReportBadRequestCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(BadRequest)
+
+  case object GetCurrentStats
 
   sealed trait MetricType
   case object Succ extends MetricType
