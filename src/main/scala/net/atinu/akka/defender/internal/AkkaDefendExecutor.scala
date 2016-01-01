@@ -8,7 +8,7 @@ import akka.event.Logging.MDC
 import akka.pattern.CircuitBreakerOpenException
 import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
+import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ GetCurrentStats, ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.akka.defender.internal.util.CallStats
 
@@ -46,6 +46,9 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case snap: CmdKeyStatsSnapshot =>
       stats = snap
       openCircuitBreakerOnFailureLimit(snap.callStats)
+
+    case GetCurrentStats =>
+      sender() ! stats
   }
 
   def receiveOpen(end: Long): Receive = {
@@ -59,9 +62,11 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case FallbackAction(promise, startTime, cmd) =>
       promise.completeWith(callBreak(cmd, calcCircuitBreakerOpenRemaining(end)))
 
-    case snap: CmdKeyStatsSnapshot => {
+    case snap: CmdKeyStatsSnapshot =>
       stats = snap
-    }
+
+    case GetCurrentStats =>
+      sender() ! stats
   }
 
   def receiveHalfOpen: Receive = {
@@ -276,9 +281,10 @@ object AkkaDefendExecutor {
   def props(msgKey: DefendCommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) =
     Props(new AkkaDefendExecutor(msgKey, cfg, dispatcherHolder))
 
-  private[internal] case object TryCloseCircuitBreaker
-  private[internal] case object ClosingCircuitBreakerFailed
-  private[internal] case object ClosingCircuitBreakerSucceed
+  private[defender] case object TryCloseCircuitBreaker
+  private[defender] case object ClosingCircuitBreakerFailed
+  private[defender] case object ClosingCircuitBreakerSucceed
+  private[defender] case object GetCurrentStats
 
   private[internal] object sameThreadExecutionContext extends ExecutionContext with DefendBatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()

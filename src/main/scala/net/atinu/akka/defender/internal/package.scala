@@ -24,7 +24,7 @@ package object internal {
 
   private[defender] case class CmdMetrics(name: DefendCommandKey)
 
-  case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Time: Long, callStats: CallStats) {
+  case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double, callStats: CallStats) {
 
     override def toString = {
       Vector(
@@ -32,6 +32,7 @@ package object internal {
         "callMedian" -> median,
         "callP95" -> p95Time,
         "callP99" -> p99Time,
+        "meanDefendOverhead" -> meanDefendOverhead,
         "countSucc" -> callStats.succCount,
         "countError" -> callStats.failureCount,
         "countCbOpen" -> callStats.ciruitBreakerOpenCount,
@@ -43,7 +44,7 @@ package object internal {
 
   object CmdKeyStatsSnapshot {
 
-    val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
+    val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
   }
 
 }

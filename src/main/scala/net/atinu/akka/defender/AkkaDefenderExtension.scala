@@ -54,6 +54,7 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: Fini
 
   private val createTimeout = new Timeout(maxCreateTime)
   private val execTimeout = new Timeout(maxCallDuration)
+  private val statsTimeout = new Timeout(60, TimeUnit.MICROSECONDS)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: DefendExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
@@ -89,5 +90,12 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: Fini
 
   private def askCreateExecutor(cmd: DefendExecution[_, _]): Future[CmdExecutorCreated] = {
     defenderRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
+  }
+
+  def statsFor(key: DefendCommandKey): Future[CmdKeyStatsSnapshot] = {
+    val keyName = key.name
+    if (refCache.containsKey(keyName)) {
+      refCache.get(keyName).ask(GetCurrentStats)(statsTimeout).mapTo[CmdKeyStatsSnapshot]
+    } else Future.failed(new IllegalArgumentException(s"no executor for key '$key'"))
   }
 }

@@ -59,18 +59,20 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
   }
 
   def publishSnapshotUpdate(): Unit = {
+    val meanExec: Double = execTime.getMean
+    val meanTotal: Double = totalTime.getMean
+    val diffMeanTotal = meanTotal - meanExec
+
     val stats = CmdKeyStatsSnapshot(
       execTime.getMean,
       execTime.getValueAtPercentile(50),
       execTime.getValueAtPercentile(95),
       execTime.getValueAtPercentile(99),
+      diffMeanTotal,
       rollingStats.sum
     )
     def overhead = if (log.isDebugEnabled) {
-      val meanExec: Double = execTime.getMean
-      val meanTotal: Double = totalTime.getMean
       val diffMeanPercent = if (meanTotal == 0d) 0 else (1 - meanExec / meanTotal) * 100
-      val diffMeanTotal = meanTotal - meanExec
       s"($diffMeanTotal ms, $diffMeanPercent %)"
     }
     log.debug("{}: current cmd key stats {}, overhead defend exec {}", cmdKey, stats, overhead)
