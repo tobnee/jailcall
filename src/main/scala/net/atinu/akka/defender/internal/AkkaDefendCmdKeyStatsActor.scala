@@ -62,8 +62,8 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
   }
 
   def publishSnapshotUpdate(): Unit = {
-    val meanExec: Double = execTime.getMean
-    val meanTotal: Double = totalTime.getMean
+    val meanExec = execTime.getMean
+    val meanTotal = totalTime.getMean
     val diffMeanTotal = meanTotal - meanExec
 
     val stats = CmdKeyStatsSnapshot(

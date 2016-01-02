@@ -25,7 +25,7 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
     runCheckedSample(sample.headOption.toVector)
     Thread.sleep(2000)
     runSamplePar(sample.tail, 20)
-    Thread.sleep(4000)
+    Thread.sleep(2000)
 
     whenReady(ad.defender.statsFor(sample.head.cmdKey)) { stats =>
       println(stats)

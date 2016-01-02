@@ -190,32 +190,30 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def updateCallStats(cmdKey: DefendCommandKey, startTimeExec: Long, totalStartTime: Long, exec: Future[Any]): Unit = {
     import context.dispatcher
-    exec.onComplete {
-      case Success(_) =>
-        setMdcContext()
-        val now: Long = System.currentTimeMillis()
-        val durationExec = now - startTimeExec
-        val durationTotal = now - totalStartTime
-        log.debug("{}: command execution succeeded", cmdKey)
-        statsActor ! ReportSuccCall(durationExec, durationTotal)
-      case Failure(v) =>
-        setMdcContext()
-        val now: Long = System.currentTimeMillis()
-        val durationExec = now - startTimeExec
-        val durationTotal = now - totalStartTime
-        val msg = v match {
-          case e: DefendBadRequestException =>
-            log.debug("{}: command execution failed -> bad request", cmdKey)
-            ReportBadRequestCall(durationExec, durationTotal)
-          case e: TimeoutException =>
-            log.debug("{}: command execution failed -> timeout", cmdKey)
-            ReportTimeoutCall(durationExec, durationTotal)
-          case e: CircuitBreakerOpenException =>
-            log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
-            ReportCircuitBreakerOpenCall
-          case e => ReportErrorCall(durationExec, durationTotal)
-        }
-        statsActor ! msg
+    exec.onComplete { res =>
+      setMdcContext()
+      val now = System.currentTimeMillis()
+      val durationExec = now - startTimeExec
+      val durationTotal = now - totalStartTime
+      res match {
+        case Success(_) =>
+          log.debug("{}: command execution succeeded", cmdKey)
+          statsActor ! ReportSuccCall(durationExec, durationTotal)
+        case Failure(v) =>
+          val msg = v match {
+            case e: DefendBadRequestException =>
+              log.debug("{}: command execution failed -> bad request", cmdKey)
+              ReportBadRequestCall(durationExec, durationTotal)
+            case e: TimeoutException =>
+              log.debug("{}: command execution failed -> timeout", cmdKey)
+              ReportTimeoutCall(durationExec, durationTotal)
+            case e: CircuitBreakerOpenException =>
+              log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
+              ReportCircuitBreakerOpenCall
+            case e => ReportErrorCall(durationExec, durationTotal)
+          }
+          statsActor ! msg
+      }
     }
   }
 
@@ -285,7 +283,7 @@ object AkkaDefendExecutor {
   private[defender] case object ClosingCircuitBreakerFailed
   private[defender] case object ClosingCircuitBreakerSucceed
 
-  private[internal] object sameThreadExecutionContext extends ExecutionContext with DefendBatchingExecutor {
+  private object sameThreadExecutionContext extends ExecutionContext with DefendBatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
     override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =
