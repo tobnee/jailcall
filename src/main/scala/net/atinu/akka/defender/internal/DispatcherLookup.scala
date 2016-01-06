@@ -17,7 +17,7 @@ object DispatcherLookup {
 
 private[internal] class DispatcherLookup(dispatchers: Dispatchers) {
 
-  def lookupDispatcher(msgKey: DefendCommandKey, isoConfig: IsolationConfig, log: LoggingAdapter, needsIsolation: Boolean): Try[DispatcherHolder] = Try {
+  def lookupDispatcher(msgKey: DefendCommandKey, isoConfig: IsolationConfig, needsIsolation: Boolean): Try[DispatcherHolder] = Try {
     isoConfig.custom match {
       case Some(cfg) =>
         DispatcherHolder(dispatchers.lookup(cfg.dispatcherName), isDefault = false)

@@ -53,7 +53,7 @@ private[defender] class AkkaDefendActor extends Actor with ActorLogging {
   def buildCmdActor(cmdKey: DefendCommandKey, needsIsolation: Boolean) = {
     for {
       cfg <- cbConfigBuilder.loadConfigForKey(cmdKey)
-      dispatcherHolder <- dispatcherLookup.lookupDispatcher(cmdKey, cfg.isolation, log, needsIsolation)
+      dispatcherHolder <- dispatcherLookup.lookupDispatcher(cmdKey, cfg.isolation, needsIsolation)
     } yield {
       val ref = createExecutorActor(cmdKey, cfg, dispatcherHolder)
       log.debug(s"created defend executor for command key: $cmdKey")
