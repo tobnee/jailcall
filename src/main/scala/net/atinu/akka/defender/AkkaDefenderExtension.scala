@@ -67,7 +67,9 @@ class AkkaDefender private[defender] (defenderRef: ActorRef, maxCreateTime: Fini
           val executor = created.executor
           executor ! DefendAction(startTime, cmd)
           refCache.put(cmdKey, executor)
-        case Failure(e) => // do nothing
+        case Failure(e) =>
+          // unlikely to happen
+          sender ! Status.Failure(e)
       }(ec)
     }
   }
