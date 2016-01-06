@@ -44,7 +44,6 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       fallbackFuture(promise, callSync(msg, startTime, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
-      println("snap update " + snap)
       stats = snap
       openCircuitBreakerOnFailureLimit(snap.callStats)
 
