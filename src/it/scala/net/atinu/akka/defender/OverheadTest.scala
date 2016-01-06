@@ -155,15 +155,12 @@ object OverheadTest {
 
       def min = {
         val chopElements = base.size - nrOfCommands
-        base.take(base.size-chopElements).drop(chopElements)
+        base.slice(chopElements, base.size - chopElements)
       }
 
-      val msDistribution = if(delayAvgMs > nrOfCommands) {
-        min
-      } else {
-        spin(nrOfCommands / base.size, Vector.empty) ++ base.take(nrOfCommands % base.size)
-      }
-
+      val msDistribution =
+        if(delayAvgMs > nrOfCommands) min
+        else spin(nrOfCommands / base.size, Vector.empty) ++ base.take(nrOfCommands % base.size)
 
       for(ms <- msDistribution) yield new TestExec(key, ms.millis, result, scheduler, ec)
     }
