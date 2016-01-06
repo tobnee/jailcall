@@ -44,6 +44,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       fallbackFuture(promise, callSync(msg, startTime, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
+      println("snap update " + snap)
       stats = snap
       openCircuitBreakerOnFailureLimit(snap.callStats)
 
@@ -165,6 +166,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
   def callBreak[T](cmd: NamedCommand, remainingDuration: FiniteDuration): Future[T] = {
     log.debug("{}: fail call due to open circuit breaker (remaining duration: {})", cmd.cmdKey, remainingDuration)
+    statsActor ! ReportCircuitBreakerOpenCall
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
