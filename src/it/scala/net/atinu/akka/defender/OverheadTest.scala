@@ -1,8 +1,6 @@
 package net.atinu.akka.defender
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Status, Scheduler}
+import akka.actor.{Scheduler, Status}
 import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.OverheadTest.TestExec
 import net.atinu.akka.defender.util.ActorTest
@@ -11,44 +9,52 @@ import org.scalatest.concurrent.Futures
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Random, Success, Try}
+import scala.util.{Success, Try}
 
 class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with Futures {
 
   val ad = AkkaDefender(system)
-  import system.dispatcher
 
   test("overhead succ") {
-    val samplePre = TestExec.sample("check2", 50, Success(5), system.scheduler, system.dispatcher, 150)
-    val nrOfCommands = 1500
-    val sample = TestExec.sample("check", 50, Success(5), system.scheduler, system.dispatcher, nrOfCommands)
-    //println(sample)
-    runCheckedSample(samplePre)
-    val start = System.currentTimeMillis()
-    runCheckedSample(sample.headOption.toVector)
-    Thread.sleep(2000)
-    runSamplePar(sample.tail, 20)
-    Thread.sleep(2000)
-
-    whenReady(ad.defender.statsFor(sample.head.cmdKey)) { stats =>
-      val end = System.currentTimeMillis() - start - 4000
-      val msPerCmd = end / nrOfCommands
-      println(s"succ: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats")
-    }
+    callAutomatedOverheadTest("check", 350, 1500,
+      (key, nr) => TestExec.sample(key, 50, Success(5), system.scheduler, system.dispatcher, nr))
   }
 
   test("overhead timeout break") {
-    callBreak("check-break", 20)
+    callBreak("check-break", 350, 700)
   }
 
   test("overhead open break") {
-    callBreak("check-break-2", 100)
+    callBreak("check-break-2", 350, 700)
   }
 
-  def callBreak(key: String, nrOfCommands: Int): Unit = {
-    val samplePre = TestExec.sample(key, 50, Success(4), system.scheduler, system.dispatcher, nrOfCommands)
-    val sample = TestExec.breakSample(key, 500, system.scheduler, system.dispatcher, nrOfCommands)
+  test("overhead mixed") {
+    import scala.concurrent.duration._
+    val key = "mixed"
+    val v1 = TestExec.sample(key, 50, Success(5), system.scheduler, system.dispatcher, 1000) ++
+      TestExec.breakSample(key, 300, system.scheduler, system.dispatcher, 250) ++
+      TestExec.breakSample(key, 1000, system.scheduler, system.dispatcher, 250)
+
+    val sample = Vector(new TestExec(key, 50.millis, Success(5), system.scheduler, system.dispatcher)) ++
+      scala.util.Random.shuffle(v1)
+
+    callOverheadTest("mixed", sample)
+  }
+
+  def callBreak(key: String, nrOfSamples: Int, nrOfCommands: Int): Unit = {
+    callAutomatedOverheadTest(key, 10, nrOfCommands,
+      (key, nr) => TestExec.breakSample(key, 500, system.scheduler, system.dispatcher, nr))
+  }
+
+  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[TestExec]) = {
+    val samplePre = generator.apply(key+"-sample", nrOfSamples)
+    val sample = generator.apply(key, nrOfCommands)
+
     runCheckedSample(samplePre)
+    callOverheadTest(key, sample)
+  }
+
+  def callOverheadTest(key: String, sample: Vector[TestExec]): Unit = {
     val start = System.currentTimeMillis()
     runCheckedSample(sample.headOption.toVector)
     Thread.sleep(2000)
@@ -57,8 +63,8 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
 
     whenReady(ad.defender.statsFor(sample.head.cmdKey)) { stats =>
       val end = System.currentTimeMillis() - start - 4000
-      val msPerCmd = end / nrOfCommands
-      println(s"$key: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats\n")
+      val msPerCmd = end / sample.length
+      println(s"\nrunning $key: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats")
     }
   }
 
@@ -92,14 +98,19 @@ object OverheadTest {
         |  command {
         |    check-break {
         |      circuit-breaker {
-        |        max-failures = 1000000,
-        |        call-timeout = 500 millis,
+        |        enabled = false
+        |        call-timeout = 200 millis,
         |        reset-timeout = 5 seconds
         |      }
         |    }
         |    check-break-2 {
         |      circuit-breaker {
-        |        max-failures = 1,
+        |        call-timeout = 500 millis,
+        |        reset-timeout = 5 seconds
+        |      }
+        |    }
+        |    mixed {
+        |      circuit-breaker {
         |        call-timeout = 500 millis,
         |        reset-timeout = 5 seconds
         |      }
@@ -125,11 +136,6 @@ object OverheadTest {
 
   object TestExec {
     import scala.concurrent.duration._
-
-
-    def sampleWithBreak(key: String, delayAvgMs: Int, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext, nrOfCommands: Int) = {
-
-    }
 
     def breakSample(key: String, breakMin: Int, scheduler: Scheduler, ec: ExecutionContext, nrOfCommands: Int) = {
       val time = (breakMin + 10).millis
