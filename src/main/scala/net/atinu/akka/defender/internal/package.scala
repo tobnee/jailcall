@@ -1,20 +1,12 @@
 package net.atinu.akka.defender
 
-import akka.pattern.AkkaDefendCircuitBreaker
-import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.akka.defender.internal.util.CallStats
 
-import scala.concurrent.duration.Duration
 import scala.concurrent._
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
 
 package object internal {
-
-  private[defender] case class CmdResources(circuitBreaker: AkkaDefendCircuitBreaker, cfg: MsgConfig,
-    dispatcherHolder: DispatcherHolder)
-
-  private[defender] case object GetKeyConfigs
 
   private[defender] case class DefendAction(startTime: Long, cmd: DefendExecution[_, _])
 
