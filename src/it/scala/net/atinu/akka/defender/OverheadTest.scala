@@ -2,22 +2,27 @@ package net.atinu.akka.defender
 
 import akka.actor.{Scheduler, Status}
 import com.typesafe.config.ConfigFactory
-import net.atinu.akka.defender.OverheadTest.TestExec
-import net.atinu.akka.defender.util.ActorTest
+import net.atinu.akka.defender.OverheadTest.{TestExecAsync, TestExec}
+import net.atinu.akka.defender.util.ActorTestIt
 import org.scalatest.concurrent.Futures
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Success, Try}
 
-class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with Futures {
+class OverheadTest extends ActorTestIt("DefenderTest", OverheadTest.config) with Futures {
 
   val ad = AkkaDefender(system)
 
   test("overhead succ") {
     callAutomatedOverheadTest("check", 350, 1500,
       (key, nr) => TestExec.sample(key, 50, Success(5), system.scheduler, system.dispatcher, nr))
+  }
+
+  test("overhead succ sync") {
+    callAutomatedOverheadTest("check-sync", 350, 1500,
+      (key, nr) => TestExec.sample(key, 50, Success(4), system.scheduler, system.dispatcher, nr, isSync = true))
   }
 
   test("overhead timeout break") {
@@ -35,7 +40,7 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
       TestExec.breakSample(key, 300, system.scheduler, system.dispatcher, 250) ++
       TestExec.breakSample(key, 1000, system.scheduler, system.dispatcher, 250)
 
-    val sample = Vector(new TestExec(key, 50.millis, Success(5), system.scheduler, system.dispatcher)) ++
+    val sample = Vector(new TestExecAsync(key, 50.millis, Success(5), system.scheduler, system.dispatcher)) ++
       scala.util.Random.shuffle(v1)
 
     callOverheadTest("mixed", sample)
@@ -46,7 +51,7 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
       (key, nr) => TestExec.breakSample(key, 500, system.scheduler, system.dispatcher, nr))
   }
 
-  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[TestExec]) = {
+  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[DefendExecution[_, _]]) = {
     val samplePre = generator.apply(key+"-sample", nrOfSamples)
     val sample = generator.apply(key, nrOfCommands)
 
@@ -54,7 +59,7 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
     callOverheadTest(key, sample)
   }
 
-  def callOverheadTest(key: String, sample: Vector[TestExec]): Unit = {
+  def callOverheadTest(key: String, sample: Vector[DefendExecution[_, _]]): Unit = {
     val start = System.currentTimeMillis()
     runCheckedSample(sample.headOption.toVector)
     Thread.sleep(2000)
@@ -68,13 +73,13 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
     }
   }
 
-  def runSamplePar(sample: IndexedSeq[TestExec], par: Int) = {
+  def runSamplePar(sample: IndexedSeq[DefendExecution[_, _]], par: Int) = {
     for(cmdBatch <- sample.iterator.grouped(par)) {
       runCheckedSample(cmdBatch)
     }
   }
 
-  def runCheckedSample(cmdBatch: Seq[TestExec]): Unit = {
+  def runCheckedSample(cmdBatch: Seq[DefendExecution[_, _]]): Unit = {
     runBatch(cmdBatch)
     for (_ <- cmdBatch) {
       expectMsgPF(hint = "succ or failure") {
@@ -84,7 +89,7 @@ class OverheadTest extends ActorTest("DefenderTest", OverheadTest.config) with F
     }
   }
 
-  def runBatch(cmdBatch: Seq[TestExec]): Unit = {
+  def runBatch(cmdBatch: Seq[DefendExecution[_, _]]): Unit = {
     for (cmd <- cmdBatch) {
       ad.defender.executeToRef(cmd)
     }
@@ -120,10 +125,10 @@ object OverheadTest {
         |""".stripMargin
     )
 
-  class TestExec(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext) extends AsyncDefendExecution[Int] {
+  abstract class TestExec(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext) extends NamedCommand {
     def cmdKey: DefendCommandKey = DefendCommandKey(key)
 
-    def execute: Future[Int] = {
+    def call(): Future[Int] = {
       val p = Promise.apply[Int]()
       scheduler.scheduleOnce(delay) {
         p.complete(result)
@@ -134,17 +139,32 @@ object OverheadTest {
     override def toString = s"$key -> $delay"
   }
 
+  class TestExecAsync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
+    extends TestExec(key, delay, result, scheduler, ec) with AsyncDefendExecution[Int] {
+
+    def execute: Future[Int] = call()
+
+  }
+
+  class TestExecSync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
+    extends TestExec(key, delay, result, scheduler, ec) with SyncDefendExecution[Int] {
+    import scala.concurrent.duration._
+
+
+    def execute = Await.result(call(), 20.seconds)
+  }
+
   object TestExec {
     import scala.concurrent.duration._
 
     def breakSample(key: String, breakMin: Int, scheduler: Scheduler, ec: ExecutionContext, nrOfCommands: Int) = {
       val time = (breakMin + 10).millis
       val succ = Success(0)
-      val cmd = new TestExec(key, time, succ, scheduler, ec)
+      val cmd = new TestExecAsync(key, time, succ, scheduler, ec)
       Vector.fill(nrOfCommands)(cmd)
     }
 
-    def sample(key: String, delayAvgMs: Int, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext, nrOfCommands: Int) = {
+    def sample(key: String, delayAvgMs: Int, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext, nrOfCommands: Int, isSync: Boolean = false) = {
       val base = Vector.range(1, delayAvgMs * 2)
 
       @tailrec
@@ -162,7 +182,10 @@ object OverheadTest {
         if(delayAvgMs > nrOfCommands) min
         else spin(nrOfCommands / base.size, Vector.empty) ++ base.take(nrOfCommands % base.size)
 
-      for(ms <- msDistribution) yield new TestExec(key, ms.millis, result, scheduler, ec)
+      for(ms <- msDistribution) yield {
+        if(isSync) new TestExecSync(key, ms.millis, result, scheduler, ec)
+        else new TestExecAsync(key, ms.millis, result, scheduler, ec)
+      }
     }
 
   }
