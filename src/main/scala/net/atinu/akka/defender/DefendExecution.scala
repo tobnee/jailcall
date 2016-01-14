@@ -7,7 +7,7 @@ trait NamedCommand {
   def cmdKey: DefendCommandKey
 }
 
-trait DefendExecution[+R, +E] extends NamedCommand {
+sealed trait DefendExecution[+R, +E] extends NamedCommand {
 
   def execute: E
 }
