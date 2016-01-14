@@ -1,20 +1,8 @@
 package net.atinu.akka.defender.internal
 
+import net.atinu.akka.defender.CallStats
+
 package object util {
-
-  case class CallStats(succCount: Long, failureCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long, badRequest: Long) {
-
-    val errorCount: Long = failureCount + ciruitBreakerOpenCount + timeoutCount
-
-    val validRequestCount: Long = errorCount + succCount
-
-    val totalCount: Long = validRequestCount + badRequest
-
-    val errorPercent: Int = {
-      if (validRequestCount > 0) (errorCount.toDouble / validRequestCount.toDouble * 100).toInt
-      else 0
-    }
-  }
 
   private[internal] class StatsBucket(var succ: Long = 0, var failure: Long = 0, var cb: Long = 0, var to: Long = 0, var br: Long = 0) {
 

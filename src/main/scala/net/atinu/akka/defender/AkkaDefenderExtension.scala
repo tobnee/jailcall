@@ -6,8 +6,8 @@ import akka.actor._
 import akka.defend.AkkaDefendDispatcherConfigurator
 import akka.util.Timeout
 import com.typesafe.config.Config
+import net.atinu.akka.defender.internal.{ DefendAction, AkkaDefendActor }
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor.GetCurrentStats
-import net.atinu.akka.defender.internal.{ CmdKeyStatsSnapshot, DefendAction, AkkaDefendActor }
 import net.atinu.akka.defender.internal.AkkaDefendActor.{ CmdExecutorCreated, CreateCmdExecutor }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag

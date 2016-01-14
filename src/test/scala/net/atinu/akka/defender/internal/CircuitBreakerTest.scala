@@ -4,9 +4,8 @@ import akka.actor.Status.Failure
 import akka.dispatch.MessageDispatcher
 import akka.pattern.CircuitBreakerOpenException
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
-import net.atinu.akka.defender.internal.util.CallStats
 import net.atinu.akka.defender.util.ActorTest
-import net.atinu.akka.defender.{ DefendCommand, DefendCommandKey, DefenderTest }
+import net.atinu.akka.defender._
 
 import scala.concurrent.Future
 

@@ -1,7 +1,5 @@
 package net.atinu.akka.defender
 
-import net.atinu.akka.defender.internal.util.CallStats
-
 import scala.concurrent._
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
@@ -19,32 +17,9 @@ package object internal {
 
   private[defender] case class CmdMetrics(name: DefendCommandKey)
 
-  case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double, callStats: CallStats) {
+  private[defender] class StatsResultException(val timeMs: Long, root: Throwable) extends RuntimeException(root) with NoStackTrace
 
-    override def toString = {
-      Vector(
-        "mean" -> mean,
-        "callMedian" -> median,
-        "callP95" -> p95Time,
-        "callP99" -> p99Time,
-        "meanDefendOverhead" -> meanDefendOverhead,
-        "countSucc" -> callStats.succCount,
-        "countError" -> callStats.failureCount,
-        "countCbOpen" -> callStats.ciruitBreakerOpenCount,
-        "countTimeout" -> callStats.timeoutCount,
-        "errorPercent" -> callStats.errorPercent
-      ).mkString(", ")
-    }
-  }
-
-  object CmdKeyStatsSnapshot {
-
-    val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
-  }
-
-  class StatsResultException(val timeMs: Long, root: Throwable) extends RuntimeException(root) with NoStackTrace
-
-  case class StatsResult[T](timeMs: Long, res: T) {
+  private[defender] case class StatsResult[T](timeMs: Long, res: T) {
 
     def withResult(res: T) = this.copy(res = res)
 

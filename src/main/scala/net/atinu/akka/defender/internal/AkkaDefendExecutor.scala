@@ -10,7 +10,6 @@ import net.atinu.akka.defender._
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
-import net.atinu.akka.defender.internal.util.CallStats
 
 import scala.concurrent.{ Future, ExecutionContext, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }

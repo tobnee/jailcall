@@ -1,7 +1,7 @@
 package net.atinu.akka.defender.internal
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import net.atinu.akka.defender.DefendCommandKey
+import net.atinu.akka.defender.{ CmdKeyStatsSnapshot, DefendCommandKey }
 import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
 import net.atinu.akka.defender.internal.util.RollingStats
 import org.HdrHistogram.Histogram

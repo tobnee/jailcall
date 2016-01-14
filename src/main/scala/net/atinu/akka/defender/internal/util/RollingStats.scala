@@ -1,5 +1,7 @@
 package net.atinu.akka.defender.internal.util
 
+import net.atinu.akka.defender.CallStats
+
 class RollingStats(val size: Int) {
 
   require(size > 0, "size must be greater than 0")
