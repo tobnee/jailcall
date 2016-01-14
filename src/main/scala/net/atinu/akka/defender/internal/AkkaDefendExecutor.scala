@@ -168,7 +168,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def applyCategorization[T](msg: DefendExecution[T, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
     case categorizer: SuccessCategorization[T @unchecked] =>
       exec.map { res =>
-        categorizer.categorize.applyOrElse(res.res, (_: Any) => IsSuccess) match {
+        categorizer.categorize.applyOrElse(res.res, (_: T) => IsSuccess) match {
           case IsSuccess => res
           case IsBadRequest => res.error(DefendBadRequestException.apply("result $res categorized as bad request"))
         }
