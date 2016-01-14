@@ -23,7 +23,7 @@ package object internal {
     def now(cmd: DefendExecution[_, _]) = DefendAction(System.currentTimeMillis(), cmd)
   }
 
-  private[defender] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: DefendExecution[_, _])
+  private[defender] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: DefendExecution[T, _])
 
   private[defender] case class CmdMetrics(name: DefendCommandKey)
 

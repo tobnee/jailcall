@@ -82,15 +82,15 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       stash()
   }
 
-  def fallbackFuture(promise: Promise[Any], res: Future[_]) =
+  def fallbackFuture[T](promise: Promise[T], res: Future[T]) =
     promise.completeWith(res)
 
-  def callSync(msg: SyncDefendExecution[_], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+  def callSync[T](msg: SyncDefendExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = false, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync(msg: AsyncDefendExecution[_], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[Any] = {
+  def callAsync[T](msg: AsyncDefendExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }
@@ -111,7 +111,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def execFlow[T](msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
+  def execFlow[T](msg: DefendExecution[T, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
     if (breakOnSingleFailure) waitForApproval()
     val res = process(msg, totalStartTime, execute)
     if (breakOnSingleFailure) checkForSingleFailure(res)
@@ -119,7 +119,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   // adapted based on the akka circuit breaker implementation
-  def process[T](msg: DefendExecution[_, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
+  def process[T](msg: DefendExecution[T, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
     implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
 
     def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
@@ -130,7 +130,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       } catch { case NonFatal(t) ⇒ (time, Future.failed(t)) }
     }
 
-    def processInternal[U](res: Try[U], startTimeMs: Long): Try[U] = {
+    def processInternal(res: Try[T], startTimeMs: Long) = {
       processPostCall(res, startTimeMs, totalStartTime, msg)
     }
 
@@ -154,7 +154,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     p.future
   }
 
-  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: DefendExecution[_, _]): Try[T] = {
+  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: DefendExecution[T, _]): Try[T] = {
     setMdcContext()
     val statsRes = StatsResult.captureStart[T](result, startTimeMs)
     val recartExec = applyCategorization(cmd, statsRes)
@@ -165,7 +165,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def applyCategorization[T](msg: DefendExecution[_, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
+  def applyCategorization[T](msg: DefendExecution[T, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
     case categorizer: SuccessCategorization[T @unchecked] =>
       exec.map { res =>
         categorizer.categorize.applyOrElse(res.res, (_: Any) => IsSuccess) match {
@@ -182,7 +182,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
-  def fallbackIfDefined[T](msg: DefendExecution[_, _], exec: Future[T]): Future[T] = msg match {
+  def fallbackIfDefined[T](msg: DefendExecution[T, _], exec: Future[T]): Future[T] = msg match {
     case static: StaticFallback[T @unchecked] =>
       fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
     case dynamic: CmdFallback[T @unchecked] =>
