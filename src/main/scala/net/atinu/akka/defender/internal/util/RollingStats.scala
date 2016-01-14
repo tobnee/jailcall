@@ -24,7 +24,7 @@ class RollingStats(val size: Int) {
     val sb = sumBucket
     sb.initialize
     var i = 0
-    while (i < elems.size) {
+    while (i < size) {
       sb += elems.apply(i)
       i += 1
     }
