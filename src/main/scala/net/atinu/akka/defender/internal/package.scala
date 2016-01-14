@@ -4,7 +4,10 @@ import akka.pattern.AkkaDefendCircuitBreaker
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.akka.defender.internal.util.CallStats
 
-import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
+import scala.concurrent._
+import scala.util.control.NoStackTrace
+import scala.util.{ Failure, Success, Try }
 
 package object internal {
 
@@ -47,4 +50,23 @@ package object internal {
     val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
   }
 
+  class StatsResultException(val timeMs: Long, root: Throwable) extends RuntimeException(root) with NoStackTrace
+
+  case class StatsResult[T](timeMs: Long, res: T) {
+
+    def withResult(res: T) = this.copy(res = res)
+
+    def error(t: Throwable) = throw new StatsResultException(timeMs, t)
+  }
+
+  object StatsResult {
+
+    def captureStart[T](res: Try[T], startMs: Long): Try[StatsResult[T]] = {
+      val time = System.currentTimeMillis() - startMs
+      res match {
+        case Success(v) => Success(StatsResult(time, v))
+        case Failure(e) => Failure(new StatsResultException(time, e))
+      }
+    }
+  }
 }
