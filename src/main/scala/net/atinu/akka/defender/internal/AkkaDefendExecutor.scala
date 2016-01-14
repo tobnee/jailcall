@@ -14,7 +14,7 @@ import net.atinu.akka.defender.internal.util.CallStats
 
 import scala.concurrent.{ Future, ExecutionContext, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.util.{ Failure, Success }
+import scala.util.{ Try, Failure, Success }
 import scala.concurrent.duration._
 
 class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
@@ -111,18 +111,15 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def execFlow(msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[Any]): Future[Any] = {
+  def execFlow[T](msg: DefendExecution[_, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
     if (breakOnSingleFailure) waitForApproval()
-    val execWithStats = callThrough(execute)
-    val recatExec = applyCategorization(msg, execWithStats)
-    val res = unwrapResult(recatExec)
-    updateCallStats(msg.cmdKey, totalStartTime, delayStatsForRes(execWithStats, res))
+    val res = process(msg, totalStartTime, execute)
     if (breakOnSingleFailure) checkForSingleFailure(res)
     fallbackIfDefined(msg, res)
   }
 
   // adapted based on the akka circuit breaker implementation
-  def callThrough[T](body: ⇒ Future[T]): Future[StatsResult[T]] = {
+  def process[T](msg: DefendExecution[_, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
     implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
 
     def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
@@ -133,29 +130,43 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
       } catch { case NonFatal(t) ⇒ (time, Future.failed(t)) }
     }
 
+    def processInternal[U](res: Try[U], startTimeMs: Long): Try[U] = {
+      processPostCall(res, startTimeMs, totalStartTime, msg)
+    }
+
     val callTimeout = cfg.circuitBreaker.callTimeout
-    val p = Promise[StatsResult[T]]()
+    val p = Promise[T]()
     if (callTimeout == Duration.Zero) {
       val (time, f) = materialize(body)
       f.onComplete { result ⇒
-        p tryComplete StatsResult.captureStart(result, time)
+        p tryComplete processInternal(result, time)
       }
     } else {
       val (time, f) = materialize(body)
       val timeout = context.system.scheduler.scheduleOnce(callTimeout) {
-        p tryComplete StatsResult.captureStart(AkkaDefendExecutor.timeoutFailure, time)
+        p tryComplete processInternal(AkkaDefendExecutor.timeoutFailure, time)
       }
       f.onComplete { result ⇒
-        p tryComplete StatsResult.captureStart(result, time)
         timeout.cancel
+        p tryComplete processInternal(result, time)
       }
     }
     p.future
   }
 
-  def applyCategorization(msg: DefendExecution[_, _], exec: Future[StatsResult[_]]): Future[StatsResult[_]] = msg match {
-    case categorizer: SuccessCategorization[Any @unchecked] =>
-      implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
+  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: DefendExecution[_, _]): Try[T] = {
+    setMdcContext()
+    val statsRes = StatsResult.captureStart[T](result, startTimeMs)
+    val recartExec = applyCategorization(cmd, statsRes)
+    updateCallStats(cmd.cmdKey, totalStartTime, recartExec)
+    recartExec match {
+      case Success(v) => Success(v.res)
+      case Failure(t) => Failure(t.getCause)
+    }
+  }
+
+  def applyCategorization[T](msg: DefendExecution[_, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
+    case categorizer: SuccessCategorization[T @unchecked] =>
       exec.map { res =>
         categorizer.categorize.applyOrElse(res.res, (_: Any) => IsSuccess) match {
           case IsSuccess => res
@@ -165,44 +176,25 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case _ => exec
   }
 
-  def unwrapResult(recatExec: Future[StatsResult[_]]): Future[Any] = {
-    implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
-    val p = Promise[Any]()
-    recatExec.onComplete {
-      case Success(v) => p.trySuccess(v.res)
-      case Failure(t) => p.tryFailure(t.getCause)
-    }
-    p.future
-  }
-
-  def delayStatsForRes(execWithStats: Future[StatsResult[Any]], res: Future[Any]): Future[StatsResult[Any]] = {
-    implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
-    val p = Promise[StatsResult[Any]]()
-    res.onComplete { res =>
-      p.completeWith(execWithStats)
-    }
-    p.future
-  }
-
   def callBreak[T](cmd: NamedCommand, remainingDuration: FiniteDuration): Future[T] = {
     log.debug("{}: fail call due to open circuit breaker (remaining duration: {})", cmd.cmdKey, remainingDuration)
     statsActor ! ReportCircuitBreakerOpenCall
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
-  def fallbackIfDefined(msg: DefendExecution[_, _], exec: Future[Any]): Future[Any] = msg match {
-    case static: StaticFallback[_] =>
+  def fallbackIfDefined[T](msg: DefendExecution[_, _], exec: Future[T]): Future[T] = msg match {
+    case static: StaticFallback[T @unchecked] =>
       fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
-    case dynamic: CmdFallback[_] =>
+    case dynamic: CmdFallback[T @unchecked] =>
       fallbackIfValidRequest(exec) { err =>
-        val fallbackPromise = Promise.apply[Any]()
+        val fallbackPromise = Promise.apply[T]()
         self ! FallbackAction(fallbackPromise, System.currentTimeMillis(), dynamic.fallback)
         fallbackPromise.future
       }
     case _ => exec
   }
 
-  def fallbackIfValidRequest(exec: Future[_])(recover: Throwable => Future[_]) = {
+  def fallbackIfValidRequest[T](exec: Future[T])(recover: Throwable => Future[T]) = {
     import context.dispatcher
     exec.recoverWith {
       case _: DefendBadRequestException => exec
@@ -210,32 +202,28 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def updateCallStats(cmdKey: DefendCommandKey, totalStartTime: Long, exec: Future[StatsResult[_]]): Unit = {
-    implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
-    exec.onComplete { res =>
-      setMdcContext()
-      val durationTotal = System.currentTimeMillis() - totalStartTime
-      res match {
-        case Success(v) =>
-          log.debug("{}: command execution succeeded in {} ms", cmdKey, durationTotal)
-          statsActor ! ReportSuccCall(v.timeMs, durationTotal)
-        case Failure(v: StatsResultException) =>
-          val msg = v.getCause match {
-            case e: DefendBadRequestException =>
-              log.debug("{}: command execution failed -> bad request", cmdKey)
-              ReportBadRequestCall(v.timeMs, durationTotal)
-            case e: TimeoutException =>
-              log.debug("{}: command execution failed -> timeout", cmdKey)
-              ReportTimeoutCall(v.timeMs, durationTotal)
-            case e: CircuitBreakerOpenException =>
-              log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
-              ReportCircuitBreakerOpenCall
-            case e => ReportErrorCall(v.timeMs, durationTotal)
-          }
-          statsActor ! msg
-        case Failure(e) =>
-          log.error(e, "unexpected exception")
-      }
+  def updateCallStats(cmdKey: DefendCommandKey, totalStartTime: Long, exec: Try[StatsResult[_]]): Unit = {
+    val durationTotal = System.currentTimeMillis() - totalStartTime
+    exec match {
+      case Success(v) =>
+        log.debug("{}: command execution succeeded in {} ms", cmdKey, durationTotal)
+        statsActor ! ReportSuccCall(v.timeMs, durationTotal)
+      case Failure(v: StatsResultException) =>
+        val msg = v.getCause match {
+          case e: DefendBadRequestException =>
+            log.debug("{}: command execution failed -> bad request", cmdKey)
+            ReportBadRequestCall(v.timeMs, durationTotal)
+          case e: TimeoutException =>
+            log.debug("{}: command execution failed -> timeout", cmdKey)
+            ReportTimeoutCall(v.timeMs, durationTotal)
+          case e: CircuitBreakerOpenException =>
+            log.debug("{}: command execution failed -> open circuit breaker", cmdKey)
+            ReportCircuitBreakerOpenCall
+          case e => ReportErrorCall(v.timeMs, durationTotal)
+        }
+        statsActor ! msg
+      case Failure(e) =>
+        log.error(e, "unexpected exception")
     }
   }
 
