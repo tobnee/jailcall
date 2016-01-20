@@ -2,24 +2,24 @@ package net.atinu.akka.defender
 
 import java.util.concurrent.ConcurrentHashMap
 
-object DefendCommandKey {
+object CommandKey {
 
-  private val intern = new ConcurrentHashMap[String, DefendCommandKey]()
+  private val intern = new ConcurrentHashMap[String, CommandKey]()
 
   def apply(_name: String) =
     if (intern.containsKey(_name)) intern.get(_name)
     else {
-      val key = DefaultDefendCommandKey(_name)
+      val key = DefaultCommandKey(_name)
       intern.put(_name, key)
       key
     }
 }
 
-trait DefendCommandKey {
+trait CommandKey {
   def name: String
 }
 
-case class DefaultDefendCommandKey(name: String) extends DefendCommandKey {
+case class DefaultCommandKey(name: String) extends CommandKey {
 
   override def toString = name
 }

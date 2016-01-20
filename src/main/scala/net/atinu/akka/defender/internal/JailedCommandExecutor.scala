@@ -3,12 +3,12 @@ package net.atinu.akka.defender.internal
 import java.util.concurrent.TimeoutException
 
 import akka.actor._
-import akka.defend.DefendBatchingExecutor
+import akka.defend.JailcallBatchingExecutor
 import akka.event.Logging.MDC
 import akka.pattern.CircuitBreakerOpenException
 import net.atinu.akka.defender._
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
-import net.atinu.akka.defender.internal.AkkaDefendExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
+import net.atinu.akka.defender.internal.CmdKeyStatsActor._
+import net.atinu.akka.defender.internal.JailedCommandExecutor.{ ClosingCircuitBreakerSucceed, ClosingCircuitBreakerFailed, TryCloseCircuitBreaker }
 import net.atinu.akka.defender.internal.DispatcherLookup.DispatcherHolder
 
 import scala.concurrent.{ Future, ExecutionContext, Promise }
@@ -16,7 +16,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Try, Failure, Success }
 import scala.concurrent.duration._
 
-class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
+class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
     extends Actor with DiagnosticActorLogging with Stash {
 
   import akka.pattern.pipe
@@ -28,18 +28,18 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case DefendAction(startTime, msg: AsyncDefendExecution[_]) =>
+    case JailedAction(startTime, msg: AsyncJailedExecution[_]) =>
       import context.dispatcher
       callAsync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
 
-    case DefendAction(startTime, msg: SyncDefendExecution[_]) =>
+    case JailedAction(startTime, msg: SyncJailedExecution[_]) =>
       import context.dispatcher
       callSync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
 
-    case FallbackAction(promise, startTime, msg: AsyncDefendExecution[_]) =>
+    case FallbackAction(promise, startTime, msg: AsyncJailedExecution[_]) =>
       fallbackFuture(promise, callAsync(msg, startTime, isFallback = true, isHalfOpen))
 
-    case FallbackAction(promise, startTime, msg: SyncDefendExecution[_]) =>
+    case FallbackAction(promise, startTime, msg: SyncJailedExecution[_]) =>
       fallbackFuture(promise, callSync(msg, startTime, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
@@ -54,7 +54,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case DefendAction(_, msg: DefendExecution[_, _]) =>
+    case JailedAction(_, msg: JailedExecution[_, _]) =>
       import context.dispatcher
       callBreak(msg, calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
@@ -84,12 +84,12 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def fallbackFuture[T](promise: Promise[T], res: Future[T]) =
     promise.completeWith(res)
 
-  def callSync[T](msg: SyncDefendExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
+  def callSync[T](msg: SyncJailedExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = false, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync[T](msg: AsyncDefendExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
+  def callAsync[T](msg: AsyncJailedExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }
@@ -110,7 +110,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def execFlow[T](msg: DefendExecution[T, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
+  def execFlow[T](msg: JailedExecution[T, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
     if (breakOnSingleFailure) waitForApproval()
     val res = process(msg, totalStartTime, execute)
     if (breakOnSingleFailure) checkForSingleFailure(res)
@@ -118,8 +118,8 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   // adapted based on the akka circuit breaker implementation
-  def process[T](msg: DefendExecution[T, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
-    implicit val ec = AkkaDefendExecutor.sameThreadExecutionContext
+  def process[T](msg: JailedExecution[T, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
+    implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
 
     def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
       var time = 0L
@@ -143,7 +143,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     } else {
       val (time, f) = materialize(body)
       val timeout = context.system.scheduler.scheduleOnce(callTimeout) {
-        p tryComplete processInternal(AkkaDefendExecutor.timeoutFailure, time)
+        p tryComplete processInternal(JailedCommandExecutor.timeoutFailure, time)
       }
       f.onComplete { result ⇒
         timeout.cancel
@@ -153,7 +153,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     p.future
   }
 
-  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: DefendExecution[T, _]): Try[T] = {
+  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T, _]): Try[T] = {
     setMdcContext()
     val statsRes = StatsResult.captureStart[T](result, startTimeMs)
     val recartExec = applyCategorization(cmd, statsRes)
@@ -164,12 +164,12 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     }
   }
 
-  def applyCategorization[T](msg: DefendExecution[T, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
+  def applyCategorization[T](msg: JailedExecution[T, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
     case categorizer: SuccessCategorization[T @unchecked] =>
       exec.map { res =>
         categorizer.categorize.applyOrElse(res.res, (_: T) => IsSuccess) match {
           case IsSuccess => res
-          case IsBadRequest => res.error(DefendBadRequestException.apply("result $res categorized as bad request"))
+          case IsBadRequest => res.error(BadRequestException.apply("result $res categorized as bad request"))
         }
       }
     case _ => exec
@@ -181,7 +181,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
-  def fallbackIfDefined[T](msg: DefendExecution[T, _], exec: Future[T]): Future[T] = msg match {
+  def fallbackIfDefined[T](msg: JailedExecution[T, _], exec: Future[T]): Future[T] = msg match {
     case static: StaticFallback[T @unchecked] =>
       fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
     case dynamic: CmdFallback[T @unchecked] =>
@@ -196,12 +196,12 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   def fallbackIfValidRequest[T](exec: Future[T])(recover: Throwable => Future[T]) = {
     import context.dispatcher
     exec.recoverWith {
-      case _: DefendBadRequestException => exec
+      case _: BadRequestException => exec
       case e => recover(e)
     }
   }
 
-  def updateCallStats(cmdKey: DefendCommandKey, totalStartTime: Long, exec: Try[StatsResult[_]]): Unit = {
+  def updateCallStats(cmdKey: CommandKey, totalStartTime: Long, exec: Try[StatsResult[_]]): Unit = {
     val durationTotal = System.currentTimeMillis() - totalStartTime
     exec match {
       case Success(v) =>
@@ -209,7 +209,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
         statsActor ! ReportSuccCall(v.timeMs, durationTotal)
       case Failure(v: StatsResultException) =>
         val msg = v.getCause match {
-          case e: DefendBadRequestException =>
+          case e: BadRequestException =>
             log.debug("{}: command execution failed -> bad request", cmdKey)
             ReportBadRequestCall(v.timeMs, durationTotal)
           case e: TimeoutException =>
@@ -227,7 +227,7 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
   }
 
   def startStatsActor() = {
-    context.actorOf(AkkaDefendCmdKeyStatsActor.props(msgKey, cfg.metrics), s"cmd-key-stats")
+    context.actorOf(CmdKeyStatsActor.props(msgKey, cfg.metrics), s"cmd-key-stats")
   }
 
   def waitForApproval() = {
@@ -283,16 +283,16 @@ class AkkaDefendExecutor(val msgKey: DefendCommandKey, val cfg: MsgConfig, val d
 
 }
 
-object AkkaDefendExecutor {
+object JailedCommandExecutor {
 
-  def props(msgKey: DefendCommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) =
-    Props(new AkkaDefendExecutor(msgKey, cfg, dispatcherHolder))
+  def props(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) =
+    Props(new JailedCommandExecutor(msgKey, cfg, dispatcherHolder))
 
   private[defender] case object TryCloseCircuitBreaker
   private[defender] case object ClosingCircuitBreakerFailed
   private[defender] case object ClosingCircuitBreakerSucceed
 
-  private object sameThreadExecutionContext extends ExecutionContext with DefendBatchingExecutor {
+  private object sameThreadExecutionContext extends ExecutionContext with JailcallBatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
     override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =

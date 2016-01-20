@@ -11,9 +11,9 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Success, Try}
 
-class OverheadTest extends ActorTestIt("DefenderTest", OverheadTest.config) with Futures {
+class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with Futures {
 
-  val ad = AkkaDefender(system)
+  val ad = Jailcall(system)
 
   test("overhead succ") {
     callAutomatedOverheadTest("check", 350, 1500,
@@ -51,7 +51,7 @@ class OverheadTest extends ActorTestIt("DefenderTest", OverheadTest.config) with
       (key, nr) => TestExec.breakSample(key, 500, system.scheduler, system.dispatcher, nr))
   }
 
-  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[DefendExecution[_, _]]) = {
+  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[JailedExecution[_, _]]) = {
     val samplePre = generator.apply(key+"-sample", nrOfSamples)
     val sample = generator.apply(key, nrOfCommands)
 
@@ -59,27 +59,27 @@ class OverheadTest extends ActorTestIt("DefenderTest", OverheadTest.config) with
     callOverheadTest(key, sample)
   }
 
-  def callOverheadTest(key: String, sample: Vector[DefendExecution[_, _]]): Unit = {
+  def callOverheadTest(key: String, sample: Vector[JailedExecution[_, _]]): Unit = {
     val start = System.currentTimeMillis()
     runCheckedSample(sample.headOption.toVector)
     Thread.sleep(2000)
     runSamplePar(sample.tail, 20)
     Thread.sleep(2000)
 
-    whenReady(ad.defender.statsFor(sample.head.cmdKey)) { stats =>
+    whenReady(ad.jailcall.statsFor(sample.head.cmdKey)) { stats =>
       val end = System.currentTimeMillis() - start - 4000
       val msPerCmd = end / sample.length
       println(s"\nrunning $key: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats")
     }
   }
 
-  def runSamplePar(sample: IndexedSeq[DefendExecution[_, _]], par: Int) = {
+  def runSamplePar(sample: IndexedSeq[JailedExecution[_, _]], par: Int) = {
     for(cmdBatch <- sample.iterator.grouped(par)) {
       runCheckedSample(cmdBatch)
     }
   }
 
-  def runCheckedSample(cmdBatch: Seq[DefendExecution[_, _]]): Unit = {
+  def runCheckedSample(cmdBatch: Seq[JailedExecution[_, _]]): Unit = {
     runBatch(cmdBatch)
     for (_ <- cmdBatch) {
       expectMsgPF(hint = "succ or failure") {
@@ -89,9 +89,9 @@ class OverheadTest extends ActorTestIt("DefenderTest", OverheadTest.config) with
     }
   }
 
-  def runBatch(cmdBatch: Seq[DefendExecution[_, _]]): Unit = {
+  def runBatch(cmdBatch: Seq[JailedExecution[_, _]]): Unit = {
     for (cmd <- cmdBatch) {
-      ad.defender.executeToRef(cmd)
+      ad.jailcall.executeToRef(cmd)
     }
   }
 }
@@ -126,7 +126,7 @@ object OverheadTest {
     )
 
   abstract class TestExec(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext) extends NamedCommand {
-    def cmdKey: DefendCommandKey = DefendCommandKey(key)
+    def cmdKey: CommandKey = CommandKey(key)
 
     def call(): Future[Int] = {
       val p = Promise.apply[Int]()
@@ -140,14 +140,14 @@ object OverheadTest {
   }
 
   class TestExecAsync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
-    extends TestExec(key, delay, result, scheduler, ec) with AsyncDefendExecution[Int] {
+    extends TestExec(key, delay, result, scheduler, ec) with AsyncJailedExecution[Int] {
 
     def execute: Future[Int] = call()
 
   }
 
   class TestExecSync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
-    extends TestExec(key, delay, result, scheduler, ec) with SyncDefendExecution[Int] {
+    extends TestExec(key, delay, result, scheduler, ec) with SyncJailedExecution[Int] {
     import scala.concurrent.duration._
 
 

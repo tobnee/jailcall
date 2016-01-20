@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.ConfigurationException
 import com.typesafe.config.Config
-import net.atinu.akka.defender.DefendCommandKey
+import net.atinu.akka.defender.CommandKey
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -28,7 +28,7 @@ private[internal] case class IsolationConfig(custom: Option[CustomIsolationConfi
 
 private[internal] class MsgConfigBuilder(config: Config) {
 
-  def loadConfigForKey(key: DefendCommandKey): Try[MsgConfig] = {
+  def loadConfigForKey(key: CommandKey): Try[MsgConfig] = {
     Try {
       MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key), loadMetricsConfig(key))
     }
@@ -46,11 +46,11 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
   private val defaultMetricsConfig = forceLoadMetricsConfig(defaultMetricsConfigValue)
 
-  private def loadCircuitBreakerConfig(key: DefendCommandKey): CircuitBreakerConfig =
+  private def loadCircuitBreakerConfig(key: CommandKey): CircuitBreakerConfig =
     loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
       .map(_.withFallback(defaultCbConfigValue))).getOrElse(defaultCbConfig)
 
-  private def cmdKeyCBConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.circuit-breaker"
+  private def cmdKeyCBConfigPath(key: CommandKey) = s"defender.command.${key.name}.circuit-breaker"
 
   private def loadCbConfigInPath(cfg: Option[Config]) = {
     cfg.map { cbConfig => forceLoadCbConfigInPath(cbConfig) }
@@ -66,12 +66,12 @@ private[internal] class MsgConfigBuilder(config: Config) {
     )
   }
 
-  private def loadDispatcherConfig(key: DefendCommandKey): IsolationConfig = {
+  private def loadDispatcherConfig(key: CommandKey): IsolationConfig = {
     loadIsolationConfig(loadConfig(cmdKeyDispatcherConfigPath(key))
       .map(_.withFallback(defaultIsolationConfigValue))).getOrElse(defaultIsolationConfig)
   }
 
-  private def cmdKeyDispatcherConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.isolation"
+  private def cmdKeyDispatcherConfigPath(key: CommandKey) = s"defender.command.${key.name}.isolation"
 
   private def loadIsolationConfig(isolationConfig: Option[Config]) = {
     isolationConfig.map(cfg => forceLoadIsolationConfig(cfg))
@@ -93,7 +93,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     }
   }
 
-  private def loadMetricsConfig(key: DefendCommandKey): MetricsConfig =
+  private def loadMetricsConfig(key: CommandKey): MetricsConfig =
     loadMetricsConfigInPath(loadConfig(cmdKeyMetricsConfigPath(key))
       .map(_.withFallback(defaultMetricsConfigValue)))
       .collect {
@@ -113,7 +113,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     )
   }
 
-  private def cmdKeyMetricsConfigPath(key: DefendCommandKey) = s"defender.command.${key.name}.metrics"
+  private def cmdKeyMetricsConfigPath(key: CommandKey) = s"defender.command.${key.name}.metrics"
 
   private def loadConfigDefault(key: String) = loadConfig(key)
     .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))

@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.dispatch.{ Dispatcher, DispatcherPrerequisites, MessageDispatcher, MessageDispatcherConfigurator }
 import com.typesafe.config.Config
 
-class AkkaDefendDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+class JailcallDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
   import akka.util.Helpers.ConfigOps

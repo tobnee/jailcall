@@ -14,6 +14,8 @@ class ActorTest(_system: ActorSystem) extends TestKit(_system) with ImplicitSend
     cfg.withFallback(ConfigFactory.load())
   ))
 
+  def this(name: String) = this(name, ConfigFactory.load())
+
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }

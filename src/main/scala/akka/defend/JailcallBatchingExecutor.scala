@@ -2,4 +2,4 @@ package akka.defend
 
 import akka.dispatch.BatchingExecutor
 
-trait DefendBatchingExecutor extends BatchingExecutor
+trait JailcallBatchingExecutor extends BatchingExecutor

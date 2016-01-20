@@ -3,20 +3,20 @@ package net.atinu.akka
 package object defender {
 
   implicit class StringToCommandKey(val name: String) extends AnyVal {
-    def asKey = DefendCommandKey.apply(name)
+    def asKey = CommandKey.apply(name)
   }
 
-  sealed trait DefendBadRequestException extends Throwable
+  sealed trait BadRequestException extends Throwable
 
-  class DefendBadRequestExceptionWithCause(message: String, cause: Throwable) extends RuntimeException(message, cause) with DefendBadRequestException
+  class BadRequestExceptionWithCause(message: String, cause: Throwable) extends RuntimeException(message, cause) with BadRequestException
 
-  class SimpleDefendBadRequestException(message: String) extends RuntimeException(message) with DefendBadRequestException
+  class SimpleBadRequestException(message: String) extends RuntimeException(message) with BadRequestException
 
-  object DefendBadRequestException {
+  object BadRequestException {
 
-    def apply(message: String): DefendBadRequestException = new SimpleDefendBadRequestException(message)
+    def apply(message: String): BadRequestException = new SimpleBadRequestException(message)
 
-    def apply(message: String, cause: Throwable): DefendBadRequestException = new DefendBadRequestExceptionWithCause(message, cause)
+    def apply(message: String, cause: Throwable): BadRequestException = new BadRequestExceptionWithCause(message, cause)
 
   }
 

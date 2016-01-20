@@ -6,16 +6,16 @@ import scala.util.{ Failure, Success, Try }
 
 package object internal {
 
-  private[defender] case class DefendAction(startTime: Long, cmd: DefendExecution[_, _])
+  private[defender] case class JailedAction(startTime: Long, cmd: JailedExecution[_, _])
 
-  object DefendAction {
+  object JailedAction {
 
-    def now(cmd: DefendExecution[_, _]) = DefendAction(System.currentTimeMillis(), cmd)
+    def now(cmd: JailedExecution[_, _]) = JailedAction(System.currentTimeMillis(), cmd)
   }
 
-  private[defender] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: DefendExecution[T, _])
+  private[defender] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T, _])
 
-  private[defender] case class CmdMetrics(name: DefendCommandKey)
+  private[defender] case class CmdMetrics(name: CommandKey)
 
   private[defender] class StatsResultException(val timeMs: Long, root: Throwable) extends RuntimeException(root) with NoStackTrace
 

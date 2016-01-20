@@ -1,13 +1,13 @@
 package net.atinu.akka.defender.internal
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import net.atinu.akka.defender.{ CmdKeyStatsSnapshot, DefendCommandKey }
-import net.atinu.akka.defender.internal.AkkaDefendCmdKeyStatsActor._
+import net.atinu.akka.defender.{ CmdKeyStatsSnapshot, CommandKey }
+import net.atinu.akka.defender.internal.CmdKeyStatsActor._
 import net.atinu.akka.defender.internal.util.RollingStats
 import org.HdrHistogram.Histogram
 import scala.concurrent.duration._
 
-class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfig) extends Actor with ActorLogging {
+class CmdKeyStatsActor(cmdKey: CommandKey, metrics: MetricsConfig) extends Actor with ActorLogging {
   import context.dispatcher
 
   val execTime = new Histogram(600000L, 1)
@@ -84,9 +84,9 @@ class AkkaDefendCmdKeyStatsActor(cmdKey: DefendCommandKey, metrics: MetricsConfi
   }
 }
 
-object AkkaDefendCmdKeyStatsActor {
+object CmdKeyStatsActor {
 
-  def props(cmdKey: DefendCommandKey, metrics: MetricsConfig) = Props(new AkkaDefendCmdKeyStatsActor(cmdKey, metrics))
+  def props(cmdKey: CommandKey, metrics: MetricsConfig) = Props(new CmdKeyStatsActor(cmdKey, metrics))
 
   sealed abstract class MetricReportCommand(val metricType: MetricType)
   case class ReportSuccCall(execTimeMs: Long, totalTimeMs: Long) extends MetricReportCommand(Succ)

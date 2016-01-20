@@ -2,12 +2,12 @@ package net.atinu.akka.defender.internal
 
 import com.typesafe.config.ConfigFactory
 import net.atinu.akka.defender.util.ActorTest
-import net.atinu.akka.defender.{ AkkaDefender, DefendCommandKey }
+import net.atinu.akka.defender.{ Jailcall, CommandKey }
 
-class DispatcherLookupTest extends ActorTest("DispatcherLookup", DispatcherLookupTest.config) {
+class DispatcherLookupTest extends ActorTest("DispatcherLookupTest", DispatcherLookupTest.config) {
 
-  val msgKey = DefendCommandKey("aKey")
-  val defendExt = AkkaDefender(system)
+  val msgKey = CommandKey("aKey")
+  val defendExt = Jailcall(system)
 
   test("the default dispatcher is loaded for a non blocking command") {
     val ld = new DispatcherLookup(system.dispatchers)
