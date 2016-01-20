@@ -1,4 +1,4 @@
-name := """akka-defender"""
+name := "jailcall"
 
 version := "0.1"
 
