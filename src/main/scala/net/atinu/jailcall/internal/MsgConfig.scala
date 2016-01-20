@@ -34,15 +34,15 @@ private[internal] class MsgConfigBuilder(config: Config) {
     }
   }
 
-  private val defaultCbConfigValue = loadConfigDefault("defender.command.default.circuit-breaker")
+  private val defaultCbConfigValue = loadConfigDefault("jailcall.command.default.circuit-breaker")
 
   private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbConfigValue)
 
-  private val defaultIsolationConfigValue = loadConfigDefault("defender.command.default.isolation")
+  private val defaultIsolationConfigValue = loadConfigDefault("jailcall.command.default.isolation")
 
   private val defaultIsolationConfig = forceLoadIsolationConfig(defaultIsolationConfigValue)
 
-  private val defaultMetricsConfigValue = loadConfigDefault("defender.command.default.metrics")
+  private val defaultMetricsConfigValue = loadConfigDefault("jailcall.command.default.metrics")
 
   private val defaultMetricsConfig = forceLoadMetricsConfig(defaultMetricsConfigValue)
 
@@ -50,7 +50,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
       .map(_.withFallback(defaultCbConfigValue))).getOrElse(defaultCbConfig)
 
-  private def cmdKeyCBConfigPath(key: CommandKey) = s"defender.command.${key.name}.circuit-breaker"
+  private def cmdKeyCBConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.circuit-breaker"
 
   private def loadCbConfigInPath(cfg: Option[Config]) = {
     cfg.map { cbConfig => forceLoadCbConfigInPath(cbConfig) }
@@ -71,7 +71,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
       .map(_.withFallback(defaultIsolationConfigValue))).getOrElse(defaultIsolationConfig)
   }
 
-  private def cmdKeyDispatcherConfigPath(key: CommandKey) = s"defender.command.${key.name}.isolation"
+  private def cmdKeyDispatcherConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.isolation"
 
   private def loadIsolationConfig(isolationConfig: Option[Config]) = {
     isolationConfig.map(cfg => forceLoadIsolationConfig(cfg))
@@ -113,7 +113,7 @@ private[internal] class MsgConfigBuilder(config: Config) {
     )
   }
 
-  private def cmdKeyMetricsConfigPath(key: CommandKey) = s"defender.command.${key.name}.metrics"
+  private def cmdKeyMetricsConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.metrics"
 
   private def loadConfigDefault(key: String) = loadConfig(key)
     .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))

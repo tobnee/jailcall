@@ -12,7 +12,7 @@ class ConfigTest extends FunSuite with Matchers {
   val refCfg = ConfigFactory.load("reference.conf")
   val customCfg = ConfigFactory
     .parseString(
-      """defender {
+      """jailcall {
         |  command {
         |    load-data {
         |      circuit-breaker {
@@ -50,7 +50,7 @@ class ConfigTest extends FunSuite with Matchers {
     )
   val customCfg2 = ConfigFactory
     .parseString(
-      """defender {
+      """jailcall {
         |  command {
         |    load-data {
         |    }

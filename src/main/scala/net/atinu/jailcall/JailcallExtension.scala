@@ -20,7 +20,7 @@ object Jailcall extends ExtensionId[JailcallExtension] {
   def createExtension(system: ExtendedActorSystem): JailcallExtension =
     new JailcallExtension(system)
 
-  private[jailcall] val JAILCALL_DISPATCHER_ID = "akka-defend-default"
+  private[jailcall] val JAILCALL_DISPATCHER_ID = "jailcall-default"
 }
 
 class JailcallExtension(val system: ExtendedActorSystem) extends Extension with ExtensionIdProvider {
@@ -28,7 +28,7 @@ class JailcallExtension(val system: ExtendedActorSystem) extends Extension with 
   private val config = system.settings.config
   private val dispatchers = system.dispatchers
   private val dispatcherConf: Config =
-    config.getConfig("defender.isolation.default-dispatcher")
+    config.getConfig("jailcall.isolation.default-dispatcher")
       .withFallback(config.getConfig("akka.actor.default-dispatcher"))
 
   system.dispatchers.registerConfigurator(
@@ -36,13 +36,13 @@ class JailcallExtension(val system: ExtendedActorSystem) extends Extension with 
     new JailcallDispatcherConfigurator(dispatcherConf, dispatchers.prerequisites)
   )
 
-  private val rootActorName = config.getString("defender.root-actor-name")
+  private val rootActorName = config.getString("jailcall.root-actor-name")
   private val jailcallRef = system.systemActorOf(JailcallRootActor.props, rootActorName)
 
   def loadMsDuration(key: String) = FiniteDuration(config.getDuration(key, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
 
-  private val maxCallDuration = loadMsDuration("defender.max-call-duration")
-  private val maxCreateTime = loadMsDuration("defender.create-timeout")
+  private val maxCallDuration = loadMsDuration("jailcall.max-call-duration")
+  private val maxCreateTime = loadMsDuration("jailcall.create-timeout")
   val jailcall = new Jailcall(jailcallRef, maxCreateTime, maxCallDuration, system.dispatcher)
 
   def lookup(): ExtensionId[_ <: Extension] = Jailcall
