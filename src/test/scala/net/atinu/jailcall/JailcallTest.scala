@@ -106,7 +106,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val cmd1 = JailedCommand.apply("load-data2", exec = Future.successful("yes1"))
 
-    val cmd2 = JailedCommand.applyWithCmdFallback("load-data2", exec = Future.failed(err), fb = cmd1)
+    val cmd2 = JailedCommand.withCmdFallback("load-data2", exec = Future.failed(err), fb = cmd1)
 
     val defender = Jailcall(system).jailcall
     defender.executeToRef(cmd2)
