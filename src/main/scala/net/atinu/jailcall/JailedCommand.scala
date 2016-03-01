@@ -21,8 +21,8 @@ object JailedCommand {
     def execute = exec
   }
 
-  def withStaticFallback[T](key: String, exec: => Future[T], fb: => T): AsyncJailedExecution[T] with StaticFallback[T] =
-    new AsyncJailedExecution[T] with StaticFallback[T] {
+  def withStaticFallback[T](key: String, exec: => Future[T], fb: => T): AsyncJailedExecution[T] with StaticFallback =
+    new AsyncJailedExecution[T] with StaticFallback {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -30,8 +30,8 @@ object JailedCommand {
       def fallback = fb
     }
 
-  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T, _]): AsyncJailedExecution[T] with CmdFallback[T] =
-    new AsyncJailedExecution[T] with CmdFallback[T] {
+  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T]): AsyncJailedExecution[T] with CmdFallback =
+    new AsyncJailedExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -50,8 +50,8 @@ object SyncJailedCommand {
     def execute = exec
   }
 
-  def withStaticFallback[T](key: String, exec: => T, fb: => T): SyncJailedExecution[T] with StaticFallback[T] =
-    new SyncJailedExecution[T] with StaticFallback[T] {
+  def withStaticFallback[T](key: String, exec: => T, fb: => T): SyncJailedExecution[T] with StaticFallback =
+    new SyncJailedExecution[T] with StaticFallback {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -59,8 +59,8 @@ object SyncJailedCommand {
       def fallback = fb
     }
 
-  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T, _]): SyncJailedExecution[T] with CmdFallback[T] =
-    new SyncJailedExecution[T] with CmdFallback[T] {
+  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T]): SyncJailedExecution[T] with CmdFallback =
+    new SyncJailedExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 
       def execute = exec

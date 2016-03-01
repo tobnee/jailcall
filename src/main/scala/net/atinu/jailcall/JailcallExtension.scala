@@ -57,7 +57,7 @@ class Jailcall private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDu
   private val statsTimeout = new Timeout(60, TimeUnit.MICROSECONDS)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
-  def executeToRef(cmd: JailedExecution[_, _])(implicit sender: ActorRef = Actor.noSender): Unit = {
+  def executeToRef(cmd: JailedExecution[_])(implicit sender: ActorRef = Actor.noSender): Unit = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
     if (refCache.containsKey(cmdKey)) {
@@ -75,7 +75,7 @@ class Jailcall private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDu
     }
   }
 
-  def executeToFuture[R](cmd: JailedExecution[R, _])(implicit tag: ClassTag[R]): Future[R] = {
+  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[R] = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
     def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, cmd))(execTimeout).mapTo[R]
@@ -90,7 +90,7 @@ class Jailcall private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDu
     }
   }
 
-  private def askCreateExecutor(cmd: JailedExecution[_, _]): Future[CmdExecutorCreated] = {
+  private def askCreateExecutor[R](cmd: JailedExecution[R]): Future[CmdExecutorCreated] = {
     jailcallRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
   }
 

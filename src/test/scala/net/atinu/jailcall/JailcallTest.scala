@@ -50,7 +50,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
   test("A static fallback is used in case of failure") {
     val err = new scala.IllegalArgumentException("foo1")
 
-    val cmd = new AsyncJailedExecution[String] with StaticFallback[String] {
+    val cmd = new AsyncJailedExecution[String] with StaticFallback {
       def cmdKey = "load-data-0".asKey
       def execute = Future.failed(err)
       def fallback: String = "yey1"
@@ -64,7 +64,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
   test("No fallback is selected in case of a bad request error") {
     val err = BadRequestException("bad request")
 
-    val cmd = new AsyncJailedExecution[String] with StaticFallback[String] {
+    val cmd = new AsyncJailedExecution[String] with StaticFallback {
       def cmdKey = "load-data-3".asKey
       def execute = Future.failed(err)
       def fallback: String = "yey1"
@@ -76,7 +76,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
   }
 
   test("No fallback is selected in case of a success categorized as bad request") {
-    Jailcall(system).jailcall.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization[String] {
+    Jailcall(system).jailcall.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization {
       def cmdKey = CommandKey("load-data-3")
       def execute: Future[String] = Future.successful("succFuture")
       def categorize = {
@@ -91,7 +91,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
   }
 
   test("Fallback is selected in case of a non existing result categorization") {
-    Jailcall(system).jailcall.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization[String] {
+    Jailcall(system).jailcall.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization {
       def cmdKey = CommandKey("load-data-3")
       def execute: Future[String] = Future.successful("succFutur2e")
       def categorize = {
@@ -134,10 +134,10 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def execute = "yes3"
     }
 
-    val cmd2 = new SyncJailedExecution[String] with CmdFallback[String] {
+    val cmd2 = new SyncJailedExecution[String] with CmdFallback {
       def cmdKey = "load-data2".asKey
       def execute = throw err
-      def fallback = cmd1
+      def fallback: SyncJailedExecution[String] = cmd1
     }
 
     val defender = Jailcall(system).jailcall

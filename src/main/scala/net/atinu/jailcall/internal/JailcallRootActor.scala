@@ -71,7 +71,7 @@ object JailcallRootActor {
 
   def props = Props(new JailcallRootActor)
 
-  case class CreateCmdExecutor(cmdKey: CommandKey, firstCmd: Option[JailedExecution[_, _]])
+  case class CreateCmdExecutor(cmdKey: CommandKey, firstCmd: Option[JailedExecution[_]])
 
   object CreateCmdExecutor {
 

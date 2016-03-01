@@ -1,5 +1,6 @@
 package net.atinu.jailcall
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 
 trait NamedCommand {
@@ -7,26 +8,36 @@ trait NamedCommand {
   def cmdKey: CommandKey
 }
 
-sealed trait JailedExecution[+R, +E] extends NamedCommand {
+sealed trait JailedExecution[RC] extends NamedCommand {
+
+  type R = RC
+  type E
 
   def execute: E
 }
 
-trait AsyncJailedExecution[+R] extends NamedCommand with JailedExecution[R, Future[R]]
+trait AsyncJailedExecution[RC] extends NamedCommand with JailedExecution[RC] {
 
-trait SyncJailedExecution[+R] extends NamedCommand with JailedExecution[R, R]
+  type E = Future[RC]
 
-trait StaticFallback[+R] { self: JailedExecution[R, _] =>
+}
+
+trait SyncJailedExecution[RC] extends NamedCommand with JailedExecution[RC] {
+
+  type E = RC
+}
+
+trait StaticFallback { self: JailedExecution[_] =>
 
   def fallback: R
 }
 
-trait CmdFallback[+R] { self: JailedExecution[R, _] =>
+trait CmdFallback { self: JailedExecution[_] =>
 
-  def fallback: JailedExecution[R, _]
+  def fallback: JailedExecution[R @uncheckedVariance]
 }
 
-trait SuccessCategorization[R] { self: JailedExecution[R, _] =>
+trait SuccessCategorization { self: JailedExecution[_] =>
 
-  def categorize: PartialFunction[R, SuccessCategory]
+  def categorize: PartialFunction[R @uncheckedVariance, SuccessCategory]
 }

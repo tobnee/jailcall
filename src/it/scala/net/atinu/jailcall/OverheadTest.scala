@@ -51,7 +51,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
       (key, nr) => TestExec.breakSample(key, 500, system.scheduler, system.dispatcher, nr))
   }
 
-  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[JailedExecution[_, _]]) = {
+  def callAutomatedOverheadTest(key: String, nrOfSamples: Int, nrOfCommands: Int, generator: (String, Int) => Vector[JailedExecution[_]]) = {
     val samplePre = generator.apply(key+"-sample", nrOfSamples)
     val sample = generator.apply(key, nrOfCommands)
 
@@ -59,7 +59,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
     callOverheadTest(key, sample)
   }
 
-  def callOverheadTest(key: String, sample: Vector[JailedExecution[_, _]]): Unit = {
+  def callOverheadTest(key: String, sample: Vector[JailedExecution[_]]): Unit = {
     val start = System.currentTimeMillis()
     runCheckedSample(sample.headOption.toVector)
     Thread.sleep(2000)
@@ -73,13 +73,13 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
     }
   }
 
-  def runSamplePar(sample: IndexedSeq[JailedExecution[_, _]], par: Int) = {
+  def runSamplePar(sample: IndexedSeq[JailedExecution[_]], par: Int) = {
     for(cmdBatch <- sample.iterator.grouped(par)) {
       runCheckedSample(cmdBatch)
     }
   }
 
-  def runCheckedSample(cmdBatch: Seq[JailedExecution[_, _]]): Unit = {
+  def runCheckedSample(cmdBatch: Seq[JailedExecution[_]]): Unit = {
     runBatch(cmdBatch)
     for (_ <- cmdBatch) {
       expectMsgPF(hint = "succ or failure") {
@@ -89,7 +89,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
     }
   }
 
-  def runBatch(cmdBatch: Seq[JailedExecution[_, _]]): Unit = {
+  def runBatch(cmdBatch: Seq[JailedExecution[_]]): Unit = {
     for (cmd <- cmdBatch) {
       ad.jailcall.executeToRef(cmd)
     }

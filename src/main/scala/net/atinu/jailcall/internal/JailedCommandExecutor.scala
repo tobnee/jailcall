@@ -54,7 +54,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case JailedAction(_, msg: JailedExecution[_, _]) =>
+    case JailedAction(_, msg: JailedExecution[_]) =>
       import context.dispatcher
       callBreak(msg, calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
 
@@ -110,7 +110,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     }
   }
 
-  def execFlow[T](msg: JailedExecution[T, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
+  def execFlow[T](msg: JailedExecution[T], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
     if (breakOnSingleFailure) waitForApproval()
     val res = process(msg, totalStartTime, execute)
     if (breakOnSingleFailure) checkForSingleFailure(res)
@@ -118,7 +118,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
   }
 
   // adapted based on the akka circuit breaker implementation
-  def process[T](msg: JailedExecution[T, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
+  def process[T](msg: JailedExecution[T], totalStartTime: Long, body: => Future[T]): Future[T] = {
     implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
 
     def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
@@ -153,7 +153,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     p.future
   }
 
-  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T, _]): Try[T] = {
+  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T]): Try[T] = {
     setMdcContext()
     val statsRes = StatsResult.captureStart[T](result, startTimeMs)
     val recartExec = applyCategorization(cmd, statsRes)
@@ -164,10 +164,10 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     }
   }
 
-  def applyCategorization[T](msg: JailedExecution[T, _], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
-    case categorizer: SuccessCategorization[T @unchecked] =>
+  def applyCategorization[T](msg: JailedExecution[T], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
+    case categorizer: SuccessCategorization =>
       exec.map { res =>
-        categorizer.categorize.applyOrElse(res.res, (_: T) => IsSuccess) match {
+        categorizer.categorize.applyOrElse(res.res, (x: categorizer.R) => IsSuccess) match {
           case IsSuccess => res
           case IsBadRequest => res.error(BadRequestException.apply("result $res categorized as bad request"))
         }
@@ -181,10 +181,10 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
-  def fallbackIfDefined[T](msg: JailedExecution[T, _], exec: Future[T]): Future[T] = msg match {
-    case static: StaticFallback[T @unchecked] =>
+  def fallbackIfDefined[T](msg: JailedExecution[T], exec: Future[T]): Future[T] = msg match {
+    case static: StaticFallback =>
       fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
-    case dynamic: CmdFallback[T @unchecked] =>
+    case dynamic: CmdFallback =>
       fallbackIfValidRequest(exec) { err =>
         val fallbackPromise = Promise.apply[T]()
         self ! FallbackAction(fallbackPromise, System.currentTimeMillis(), dynamic.fallback)

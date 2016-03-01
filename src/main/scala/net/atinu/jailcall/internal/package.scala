@@ -6,14 +6,14 @@ import scala.util.{ Failure, Success, Try }
 
 package object internal {
 
-  private[jailcall] case class JailedAction(startTime: Long, cmd: JailedExecution[_, _])
+  private[jailcall] case class JailedAction(startTime: Long, cmd: JailedExecution[_])
 
   object JailedAction {
 
-    def now(cmd: JailedExecution[_, _]) = JailedAction(System.currentTimeMillis(), cmd)
+    def now[T](cmd: JailedExecution[T]) = JailedAction(System.currentTimeMillis(), cmd)
   }
 
-  private[jailcall] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T, _])
+  private[jailcall] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T])
 
   private[jailcall] case class CmdMetrics(name: CommandKey)
 
