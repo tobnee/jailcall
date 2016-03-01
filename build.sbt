@@ -1,15 +1,23 @@
-name := "jailcall"
 
-version := "0.1"
+lazy val root = project.in(file("core"))
+  .settings(name := "jailcall")
+  .settings(version := "0.1")
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor" % "2.4.1",
+      "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
+      "com.typesafe.akka" %% "akka-testkit" % "2.4.0" % "test, it",
+      "org.scalatest" %% "scalatest" % "2.2.4" % "test, it")
+  )
+  .settings(common)
+  .settings(Defaults.itSettings)
+  .configs(IntegrationTest)
 
-scalaVersion := "2.11.7"
+lazy val docs = project.in(file("docs"))
+  .settings(tutSettings)
+  .settings(common)
+  .dependsOn(root)
 
-Defaults.itSettings
-
-lazy val root = project.in(file(".")).configs(IntegrationTest)
-
-libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.4.1",
-  "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
-  "com.typesafe.akka" %% "akka-testkit" % "2.4.0" % "test, it",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test, it")
+lazy val common = Seq(
+  scalaVersion := "2.11.7"
+)
