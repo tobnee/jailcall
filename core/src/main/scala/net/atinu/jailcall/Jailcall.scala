@@ -16,14 +16,14 @@ import scala.util.{ Failure, Success }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-object Jailcall extends ExtensionId[JailcallExtension] {
-  def createExtension(system: ExtendedActorSystem): JailcallExtension =
-    new JailcallExtension(system)
+object Jailcall extends ExtensionId[Jailcall] {
+  def createExtension(system: ExtendedActorSystem): Jailcall =
+    new Jailcall(system)
 
   private[jailcall] val JAILCALL_DISPATCHER_ID = "jailcall-default"
 }
 
-class JailcallExtension(val system: ExtendedActorSystem) extends Extension with ExtensionIdProvider {
+class Jailcall(val system: ExtendedActorSystem) extends Extension with ExtensionIdProvider {
 
   private val config = system.settings.config
   private val dispatchers = system.dispatchers
@@ -43,12 +43,12 @@ class JailcallExtension(val system: ExtendedActorSystem) extends Extension with 
 
   private val maxCallDuration = loadMsDuration("jailcall.max-call-duration")
   private val maxCreateTime = loadMsDuration("jailcall.create-timeout")
-  val jailcall = new Jailcall(jailcallRef, maxCreateTime, maxCallDuration, system.dispatcher)
+  val executor = new JailcallExecutor(jailcallRef, maxCreateTime, maxCallDuration, system.dispatcher)
 
   def lookup(): ExtensionId[_ <: Extension] = Jailcall
 }
 
-class Jailcall private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, ec: ExecutionContext) {
+class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, ec: ExecutionContext) {
 
   import akka.pattern.ask
 

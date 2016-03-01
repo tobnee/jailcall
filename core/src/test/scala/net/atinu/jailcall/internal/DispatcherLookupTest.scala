@@ -1,8 +1,8 @@
 package net.atinu.jailcall.internal
 
 import com.typesafe.config.ConfigFactory
-import net.atinu.jailcall.{ CommandKey, Jailcall }
 import net.atinu.jailcall.util.ActorTest
+import net.atinu.jailcall.{ CommandKey, Jailcall }
 
 class DispatcherLookupTest extends ActorTest("DispatcherLookupTest", DispatcherLookupTest.config) {
 

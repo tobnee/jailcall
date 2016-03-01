@@ -13,7 +13,7 @@ trait DefaultCommandNaming extends NamedCommand {
   }
 }
 
-object JailedCommand {
+object AsyncJailedCommand {
 
   def apply[T](key: String, exec: => Future[T]): AsyncJailedExecution[T] = new AsyncJailedExecution[T] {
     def cmdKey = key.asKey
@@ -40,7 +40,7 @@ object JailedCommand {
     }
 }
 
-abstract class JailedCommand[T] extends AsyncJailedExecution[T] with DefaultCommandNaming
+abstract class AsyncJailedCommand[T] extends AsyncJailedExecution[T] with DefaultCommandNaming
 
 object SyncJailedCommand {
 
