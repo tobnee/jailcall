@@ -20,17 +20,17 @@ package object jailcall {
 
   }
 
-  sealed trait SuccessCategory {
+  sealed trait ResultCategory {
     def isBadRequest: Boolean
 
     def isSuccess: Boolean = !isBadRequest
   }
 
-  object IsBadRequest extends SuccessCategory {
+  object IsBadRequest extends ResultCategory {
     override def isBadRequest = true
   }
 
-  object IsSuccess extends SuccessCategory {
+  object IsSuccess extends ResultCategory {
     override def isBadRequest = false
 
   }

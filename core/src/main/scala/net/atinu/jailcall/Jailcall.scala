@@ -12,7 +12,7 @@ import net.atinu.jailcall.internal.JailcallRootActor
 import JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.util.{ Failure, Success }
+import scala.util.{ Try, Failure, Success }
 
 import scala.concurrent.{ ExecutionContext, Future }
 

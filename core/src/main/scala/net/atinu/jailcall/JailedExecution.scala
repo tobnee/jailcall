@@ -39,5 +39,5 @@ trait CmdFallback { self: JailedExecution[_] =>
 
 trait SuccessCategorization { self: JailedExecution[_] =>
 
-  def categorize: PartialFunction[R @uncheckedVariance, SuccessCategory]
+  def categorize: PartialFunction[R @uncheckedVariance, ResultCategory]
 }
