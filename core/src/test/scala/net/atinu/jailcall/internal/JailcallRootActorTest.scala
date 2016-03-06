@@ -44,7 +44,7 @@ class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallR
       def execute = ""
     })
     probe.expectMsgPF(hint = "forwarded msg") {
-      case JailedAction(_, exec) =>
+      case JailedAction(_, _, exec) =>
         exec.cmdKey should equal(msgKey)
         probe.lastSender should equal(self)
     }

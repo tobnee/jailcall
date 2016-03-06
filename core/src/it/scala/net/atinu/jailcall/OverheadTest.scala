@@ -91,7 +91,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
 
   def runBatch(cmdBatch: Seq[JailedExecution[_]]): Unit = {
     for (cmd <- cmdBatch) {
-      ad.executor.executeToRef(cmd)
+      ad.executor.executeToRefWithContext(cmd)
     }
   }
 }

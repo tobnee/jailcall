@@ -28,13 +28,13 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case JailedAction(startTime, msg: AsyncJailedExecution[_]) =>
-      import context.dispatcher
-      callAsync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
+    case JailedAction(startTime, senderRef, msg: AsyncJailedExecution[_]) =>
+      implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
+      toResCommand(callAsync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
 
-    case JailedAction(startTime, msg: SyncJailedExecution[_]) =>
-      import context.dispatcher
-      callSync(msg, startTime, isFallback = false, isHalfOpen) pipeTo sender()
+    case JailedAction(startTime, senderRef, msg: SyncJailedExecution[_]) =>
+      implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
+      toResCommand(callSync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
 
     case FallbackAction(promise, startTime, msg: AsyncJailedExecution[_]) =>
       fallbackFuture(promise, callAsync(msg, startTime, isFallback = true, isHalfOpen))
@@ -54,9 +54,9 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case JailedAction(_, msg: JailedExecution[_]) =>
-      import context.dispatcher
-      callBreak(msg, calcCircuitBreakerOpenRemaining(end)) pipeTo sender()
+    case JailedAction(_, senderRef, msg: JailedExecution[_]) =>
+      implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
+      toResCommand(callBreak(msg, calcCircuitBreakerOpenRemaining(end)), senderRef) pipeTo sender()
 
     case FallbackAction(promise, startTime, cmd) =>
       promise.completeWith(callBreak(cmd, calcCircuitBreakerOpenRemaining(end)))
@@ -93,6 +93,9 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }
+
+  def toResCommand[T](res: Future[T], senderRef: Option[ActorRef])(implicit ec: ExecutionContext): Future[JailcallExecutionResult[T]] =
+    res.transform(res => JailcallExecutionResult(res, senderRef), t => JailcallExecutionException(t, senderRef))
 
   def cmdExecDebugMsg(isAsync: Boolean, isFallback: Boolean, breakOnSingleFailure: Boolean) = {
     def halfOpenMsg =

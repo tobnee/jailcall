@@ -14,7 +14,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def cmdKey = CommandKey("a")
       def execute: Future[String] = Future.successful("succFuture")
     })
-    expectMsg("succFuture")
+    expectResult("succFuture")
   }
 
   test("a command is executed and returned to a future") {
@@ -23,7 +23,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def execute: Future[String] = Future.successful("succFuture")
     })
     whenReady(res) { v =>
-      v should equal("succFuture")
+      v should equal(JailcallExecutionResult("succFuture"))
     }
   }
 
@@ -33,7 +33,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def cmdKey = CommandKey("a")
       def execute = Future.failed(err)
     })
-    expectMsg(Failure(err))
+    expectMsg(Failure(JailcallExecutionException(err, None)))
   }
 
   test("a command fails and is returned to a future") {
@@ -43,7 +43,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def execute = Future.failed(err)
     })
     whenReady(res.failed) { v =>
-      v should equal(err)
+      v should equal(JailcallExecutionException(err, None))
     }
   }
 
@@ -58,7 +58,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val defender = Jailcall(system).executor
     defender.executeToRef(cmd)
-    expectMsg("yey1")
+    expectResult("yey1")
   }
 
   test("No fallback is selected in case of a bad request error") {
@@ -72,7 +72,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val defender = Jailcall(system).executor
     defender.executeToRef(cmd)
-    expectMsg(Status.Failure(err))
+    expectMsg(Status.Failure(JailcallExecutionException(err)))
   }
 
   test("No fallback is selected in case of a success categorized as bad request") {
@@ -85,7 +85,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       }
     })
     expectMsgPF(hint = "a DefendBadRequestException") {
-      case Status.Failure(e) =>
+      case Status.Failure(JailcallExecutionException(e, _)) =>
         e shouldBe a[BadRequestException]
     }
   }
@@ -98,7 +98,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
         case "succFuture" => IsBadRequest
       }
     })
-    expectMsg("succFutur2e")
+    expectResult("succFutur2e")
   }
 
   test("A dynamic (cmd based) fallback is used in case of failure") {
@@ -110,7 +110,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val defender = Jailcall(system).executor
     defender.executeToRef(cmd2)
-    expectMsg("yes1")
+    expectResult("yes1")
   }
 
   test("A sync command gets called") {
@@ -123,7 +123,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val defender = Jailcall(system).executor
     defender.executeToRef(cmd1)
-    expectMsg("yes2")
+    expectResult("yes2")
   }
 
   test("A dynamic (cmd based) fallback is used in case of sync cmd failure") {
@@ -142,6 +142,8 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
 
     val defender = Jailcall(system).executor
     defender.executeToRef(cmd2)
-    expectMsg("yes3")
+    expectResult("yes3")
   }
+
+  def expectResult[T](result: T) = expectMsg(JailcallExecutionResult(result))
 }

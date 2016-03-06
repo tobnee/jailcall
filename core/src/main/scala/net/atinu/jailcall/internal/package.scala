@@ -1,16 +1,18 @@
 package net.atinu.jailcall
 
+import akka.actor.ActorRef
+
 import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
 
 package object internal {
 
-  private[jailcall] case class JailedAction(startTime: Long, cmd: JailedExecution[_])
+  private[jailcall] case class JailedAction(startTime: Long, senderRef: Option[ActorRef], cmd: JailedExecution[_])
 
   object JailedAction {
 
-    def now[T](cmd: JailedExecution[T]) = JailedAction(System.currentTimeMillis(), cmd)
+    def now[T](cmd: JailedExecution[T]) = JailedAction(System.currentTimeMillis(), None, cmd)
   }
 
   private[jailcall] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T])

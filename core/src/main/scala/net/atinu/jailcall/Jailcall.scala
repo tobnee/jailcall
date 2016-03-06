@@ -57,28 +57,40 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
   private val statsTimeout = new Timeout(60, TimeUnit.MICROSECONDS)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
-  def executeToRef(cmd: JailedExecution[_])(implicit sender: ActorRef = Actor.noSender): Unit = {
+  def executeToRef(cmd: JailedExecution[_])(implicit receiver: ActorRef) = {
     val startTime = System.currentTimeMillis()
+    val action = JailedAction(startTime, None, cmd)
+    askRefInternal(cmd, action)
+  }
+
+  def executeToRefWithContext(cmd: JailedExecution[_])(implicit receiver: ActorRef, senderContext: ActorContext): Unit = {
+    val startTime = System.currentTimeMillis()
+    val action = JailedAction(startTime, Some(senderContext.sender()), cmd)
+    askRefInternal(cmd, action)
+  }
+
+  private def askRefInternal(cmd: JailedExecution[_], action: JailedAction)(implicit receiver: ActorRef): Unit = {
     val cmdKey = cmd.cmdKey.name
     if (refCache.containsKey(cmdKey)) {
-      refCache.get(cmdKey) ! JailedAction(startTime, cmd)
+      refCache.get(cmdKey) ! action
     } else {
       askCreateExecutor(cmd).onComplete {
         case Success(created: CmdExecutorCreated) =>
           val executor = created.executor
-          executor ! JailedAction(startTime, cmd)
+          executor ! action
           refCache.put(cmdKey, executor)
         case Failure(e) =>
           // unlikely to happen
-          sender ! Status.Failure(e)
+          receiver ! Status.Failure(e)
       }(ec)
     }
   }
 
-  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[R] = {
+  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[JailcallExecutionResult[R]] = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
-    def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, cmd))(execTimeout).mapTo[R]
+    def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, None, cmd))(execTimeout)
+      .mapTo[JailcallExecutionResult[R]]
     if (refCache.containsKey(cmdKey)) {
       askInternal(refCache.get(cmdKey))
     } else {

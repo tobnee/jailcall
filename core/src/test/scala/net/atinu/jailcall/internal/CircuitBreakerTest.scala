@@ -26,7 +26,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo", Future.successful("na")))
-    expectMsg("na")
+    expectResult("na")
   }
 
   test("no break if error count is to low") {
@@ -39,7 +39,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo2", Future.successful("na")))
-    expectMsg("na")
+    expectResult("na")
   }
 
   test("cb break") {
@@ -47,14 +47,14 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     cbCalls(thisCfg)
     expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
+        e.getCause shouldBe a[CircuitBreakerOpenException]
     }
   }
 
   test("no cb break if cb disabled") {
     val thisCfg = cfg(enabled = false, rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
     cbCalls(thisCfg)
-    expectMsg("a")
+    expectResult("a")
   }
 
   def cbCalls(thisCfg: MsgConfig): Unit = {
@@ -80,12 +80,12 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
+        e.getCause shouldBe a[CircuitBreakerOpenException]
     }
     system.scheduler.scheduleOnce(700.millis, ref, cmd)
-    expectMsg("b")
+    expectResult("b")
     ref ! cmd
-    expectMsg("b")
+    expectResult("b")
   }
 
   test("cb closed / halfopen / closed circle") {
@@ -101,17 +101,17 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
+        e.getCause shouldBe a[CircuitBreakerOpenException]
     }
     system.scheduler.scheduleOnce(700.millis, ref, cmd)
     expectMsgPF() {
-      case Failure(e) =>
+      case Failure(JailcallExecutionException(e, None)) =>
         e should equal(failure)
     }
     ref ! cmd
     expectMsgPF() {
       case Failure(e) =>
-        e shouldBe a[CircuitBreakerOpenException]
+        e.getCause shouldBe a[CircuitBreakerOpenException]
     }
   }
 
@@ -119,4 +119,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     MsgConfig(CircuitBreakerConfig(enabled, requestVolumeThreshold = rvt, minFailurePercent = minFailurePercent, callTimeout = callTimeoutMs.millis, resetTimeout = resetTimeoutMs.millis), IsolationConfig.default, MetricsConfig(10 seconds, 10))
 
   def dispatcherHolder = DispatcherHolder(system.dispatcher.asInstanceOf[MessageDispatcher], true)
+
+  def expectResult[T](result: T) = expectMsg(JailcallExecutionResult(result))
+
 }
