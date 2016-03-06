@@ -110,6 +110,6 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
     val keyName = key.name
     if (refCache.containsKey(keyName)) {
       refCache.get(keyName).ask(GetCurrentStats)(statsTimeout).mapTo[CmdKeyStatsSnapshot]
-    } else Future.failed(new IllegalArgumentException(s"no executor for key '$key'"))
+    } else Future.successful(CmdKeyStatsSnapshot.initial)
   }
 }

@@ -1,7 +1,6 @@
 package net.atinu
 
 import akka.actor.{ Status, ActorRef }
-import akka.actor.Status.Status
 
 import scala.util.control.NoStackTrace
 
@@ -53,7 +52,7 @@ package object jailcall {
     }
 
     object FailureStatus {
-      def unapply(e: Status.Failure) = Status.Failure.unapply(e).flatMap {
+      def unapply(e: Status.Failure) = e.cause match {
         case e: JailcallExecutionException => e.originalSender.map(s => (e.failure, s))
         case _ => None
       }
