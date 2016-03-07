@@ -83,7 +83,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
     runBatch(cmdBatch)
     for (_ <- cmdBatch) {
       expectMsgPF(hint = "succ or failure") {
-        case v: Int => "ok"
+        case JailcallExecutionResult(v: Int, _) => "ok"
         case Status.Failure(e) => "ok"
       }
     }
@@ -91,7 +91,7 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
 
   def runBatch(cmdBatch: Seq[JailedExecution[_]]): Unit = {
     for (cmd <- cmdBatch) {
-      ad.executor.executeToRefWithContext(cmd)
+      ad.executor.executeToRef(cmd)
     }
   }
 }

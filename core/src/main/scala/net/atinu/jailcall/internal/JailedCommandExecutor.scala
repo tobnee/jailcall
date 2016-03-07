@@ -185,8 +185,6 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
   }
 
   def fallbackIfDefined[T](msg: JailedExecution[T], exec: Future[T]): Future[T] = msg match {
-    case static: StaticFallback =>
-      fallbackIfValidRequest(exec)(err => Future.successful(static.fallback))
     case dynamic: CmdFallback =>
       fallbackIfValidRequest(exec) { err =>
         val fallbackPromise = Promise.apply[T]()

@@ -27,11 +27,6 @@ trait SyncJailedExecution[RC] extends NamedCommand with JailedExecution[RC] {
   type E = RC
 }
 
-trait StaticFallback { self: JailedExecution[_] =>
-
-  def fallback: R
-}
-
 trait CmdFallback { self: JailedExecution[_] =>
 
   def fallback: JailedExecution[R @uncheckedVariance]

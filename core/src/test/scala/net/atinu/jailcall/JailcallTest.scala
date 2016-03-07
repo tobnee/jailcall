@@ -47,27 +47,13 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
     }
   }
 
-  test("A static fallback is used in case of failure") {
-    val err = new scala.IllegalArgumentException("foo1")
-
-    val cmd = new AsyncJailedExecution[String] with StaticFallback {
-      def cmdKey = "load-data-0".asKey
-      def execute = Future.failed(err)
-      def fallback: String = "yey1"
-    }
-
-    val defender = Jailcall(system).executor
-    defender.executeToRef(cmd)
-    expectResult("yey1")
-  }
-
   test("No fallback is selected in case of a bad request error") {
     val err = BadRequestException("bad request")
 
-    val cmd = new AsyncJailedExecution[String] with StaticFallback {
+    val cmd = new AsyncJailedExecution[String] with CmdFallback {
       def cmdKey = "load-data-3".asKey
       def execute = Future.failed(err)
-      def fallback: String = "yey1"
+      def fallback = AsyncJailedCommand.apply("load-fallback", Future.successful("works"))
     }
 
     val defender = Jailcall(system).executor
