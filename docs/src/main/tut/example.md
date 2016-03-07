@@ -1,6 +1,6 @@
 ## Example
 
-### Create a JailedCommand
+### Create a `JailedCommand`
 ```tut:silent
 import net.atinu.jailcall._
 
@@ -15,7 +15,7 @@ class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 }
 ```
 
-### Create an anonymous Jailed Execution
+### Create an anonymous `JailedExecution`
 ```tut:silent
 def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
 
@@ -29,6 +29,7 @@ def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
 ```
 
 ### Pipe a result to a future
+Using the Future-API **jailcall** can be used outside Actors. 
 ```tut:silent
 import scala.concurrent.Future
 import akka.actor.ActorSystem
@@ -43,8 +44,8 @@ object JailcallApp extends App {
 ### Process result with an actor including transformation
 Often it is useful to encapsulate the command execution within an actor. This has the advantage that the remote interaction
 looks like a local actor interaction from the outside, since a protocol is the visible interface. This mode of operation also
-allows for stateful command processing like in a command pipeline with several stages or retries using the scheduler or a
-BackoffSupervisor.
+allows for stateful command processing like in a command pipeline with several stages or retries using the `Scheduler` or a
+`BackoffSupervisor`.
 ```tut:silent
 import akka.actor.Actor
 import akka.actor.Status
