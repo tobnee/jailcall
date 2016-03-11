@@ -25,7 +25,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo", Future.successful("na")))
     expectResult("na")
@@ -38,7 +38,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo2", Future.successful("na")))
     expectResult("na")
@@ -65,7 +65,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "foo", Future.successful("a")))
   }
@@ -77,7 +77,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val ref = system.actorOf(
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
-    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {
@@ -98,7 +98,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val ref = system.actorOf(
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
-    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {

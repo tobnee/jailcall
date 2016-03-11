@@ -1,14 +1,14 @@
 package net.atinu.jailcall
 
-case class CmdKeyStatsSnapshot(cmdKey: CommandKey, mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double, callStats: CallStats) {
+case class CmdKeyStatsSnapshot(cmdKey: CommandKey, latencyStats: LatencyStats, callStats: CallStats) {
 
   override def toString = {
     Vector(
-      "mean" -> mean,
-      "callMedian" -> median,
-      "callP95" -> p95Time,
-      "callP99" -> p99Time,
-      "meanDefendOverhead" -> meanDefendOverhead,
+      "mean" -> latencyStats.mean,
+      "callMedian" -> latencyStats.median,
+      "callP95" -> latencyStats.p95Time,
+      "callP99" -> latencyStats.p99Time,
+      "meanDefendOverhead" -> latencyStats.meanDefendOverhead,
       "countSucc" -> callStats.succCount,
       "countError" -> callStats.failureCount,
       "countCbOpen" -> callStats.ciruitBreakerOpenCount,
@@ -20,11 +20,14 @@ case class CmdKeyStatsSnapshot(cmdKey: CommandKey, mean: Double, median: Long, p
 
 object CmdKeyStatsSnapshot {
 
-  private val stats: CallStats = CallStats(0, 0, 0, 0, 0)
-
   def initial(key: CommandKey) = {
-    CmdKeyStatsSnapshot(key, 0, 0, 0, 0, 0, stats)
+    CmdKeyStatsSnapshot(key, LatencyStats.initial, CallStats.initial)
   }
+}
+
+object CallStats {
+
+  val initial = CallStats(0, 0, 0, 0, 0)
 }
 
 case class CallStats(succCount: Long, failureCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long, badRequest: Long) {
@@ -40,4 +43,11 @@ case class CallStats(succCount: Long, failureCount: Long, ciruitBreakerOpenCount
     else 0
   }
 }
+
+object LatencyStats {
+
+  val initial = LatencyStats(0, 0, 0, 0, 0)
+}
+
+case class LatencyStats(mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double)
 

@@ -3,7 +3,7 @@ package net.atinu.jailcall.internal
 import akka.actor.{ Actor, ActorLogging, Props }
 import net.atinu.jailcall.internal.CmdKeyStatsActor._
 import net.atinu.jailcall.internal.util.RollingStats
-import net.atinu.jailcall.{ MetricsEventBus, CmdKeyStatsSnapshot, CommandKey }
+import net.atinu.jailcall.{ LatencyStats, MetricsEventBus, CmdKeyStatsSnapshot, CommandKey }
 import org.HdrHistogram.Histogram
 
 class CmdKeyStatsActor(cmdKey: CommandKey, metrics: MetricsConfig, metricsBus: MetricsEventBus) extends Actor with ActorLogging {
@@ -67,11 +67,13 @@ class CmdKeyStatsActor(cmdKey: CommandKey, metrics: MetricsConfig, metricsBus: M
 
     val stats = CmdKeyStatsSnapshot(
       cmdKey,
-      execTime.getMean,
-      execTime.getValueAtPercentile(50),
-      execTime.getValueAtPercentile(95),
-      execTime.getValueAtPercentile(99),
-      diffMeanTotal,
+      LatencyStats(
+        execTime.getMean,
+        execTime.getValueAtPercentile(50),
+        execTime.getValueAtPercentile(95),
+        execTime.getValueAtPercentile(99),
+        diffMeanTotal
+      ),
       rollingStats.sum
     )
     def overhead = if (log.isDebugEnabled) {
