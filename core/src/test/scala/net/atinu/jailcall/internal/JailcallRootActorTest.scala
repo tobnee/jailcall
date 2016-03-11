@@ -3,17 +3,18 @@ package net.atinu.jailcall.internal
 import akka.actor.Props
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import net.atinu.jailcall._
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor, NoCmdExecutorForThatKey }
 import net.atinu.jailcall.util.ActorTest
-import net.atinu.jailcall.{ CommandKey, Jailcall, SyncJailedExecution }
 
 class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallRootActorTest.config) {
 
   val ext = Jailcall(system)
+  val metricsBus = new MetricsEventBus
 
   test("create an defend executor") {
-    val defendRoot = system.actorOf(JailcallRootActor.props)
+    val defendRoot = system.actorOf(JailcallRootActor.props(metricsBus))
     val msgKey = CommandKey("one")
     defendRoot ! CreateCmdExecutor.withKey(msgKey)
     val ref = expectMsgPF(hint = "creation messsage") {
@@ -32,7 +33,7 @@ class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallR
 
   test("forward defend actions to executor") {
     val probe = TestProbe()
-    val defendRoot = system.actorOf(Props(new JailcallRootActor {
+    val defendRoot = system.actorOf(Props(new JailcallRootActor(metricsBus) {
       override def createExecutorActor(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) =
         probe.ref
     }))
@@ -51,7 +52,7 @@ class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallR
   }
 
   test("report missing executor on forward") {
-    val defendRoot = system.actorOf(JailcallRootActor.props)
+    val defendRoot = system.actorOf(JailcallRootActor.props(metricsBus))
     val msgKey = CommandKey("three")
     defendRoot ! JailedAction.now(new SyncJailedExecution[String] {
       def cmdKey = msgKey

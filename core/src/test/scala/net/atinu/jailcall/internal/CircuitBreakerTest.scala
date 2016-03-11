@@ -16,14 +16,16 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
 
   import scala.concurrent.duration._
 
+  val metricsBus = new MetricsEventBus
+
   test("no break if call limit is to low") {
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
     val commandKey = CommandKey("nfoo")
     val ref = system.actorOf(
-      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder)
+      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo", Future.successful("na")))
     expectResult("na")
@@ -33,10 +35,10 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 1000)
     val commandKey = CommandKey("nfoo2")
     val ref = system.actorOf(
-      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder)
+      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo2", Future.successful("na")))
     expectResult("na")
@@ -60,10 +62,10 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
   def cbCalls(thisCfg: MsgConfig): Unit = {
     val commandKey = CommandKey("foo")
     val ref = system.actorOf(
-      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder)
+      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
 
-    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! JailedAction.now(AsyncJailedCommand.apply(key = "foo", Future.successful("a")))
   }
@@ -73,9 +75,9 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val commandKey = CommandKey("foo2")
     val cmd = JailedAction.now(AsyncJailedCommand.apply(key = commandKey.name, Future.successful("b")))
     val ref = system.actorOf(
-      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder)
+      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
-    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {
@@ -94,9 +96,9 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val failure = new IllegalStateException("naa")
     val cmd = JailedAction.now(AsyncJailedCommand.apply(key = commandKey.name, Future.failed(failure)))
     val ref = system.actorOf(
-      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder)
+      JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
-    ref ! CmdKeyStatsSnapshot(mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
+    ref ! CmdKeyStatsSnapshot(commandKey, mean = 0, median = 0, p95Time = 0, p99Time = 0, meanDefendOverhead = 0, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
     ref ! cmd
     expectMsgPF() {

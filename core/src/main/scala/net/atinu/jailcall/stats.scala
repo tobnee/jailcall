@@ -1,6 +1,6 @@
 package net.atinu.jailcall
 
-case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double, callStats: CallStats) {
+case class CmdKeyStatsSnapshot(cmdKey: CommandKey, mean: Double, median: Long, p95Time: Long, p99Time: Long, meanDefendOverhead: Double, callStats: CallStats) {
 
   override def toString = {
     Vector(
@@ -20,7 +20,11 @@ case class CmdKeyStatsSnapshot(mean: Double, median: Long, p95Time: Long, p99Tim
 
 object CmdKeyStatsSnapshot {
 
-  val initial = CmdKeyStatsSnapshot(0, 0, 0, 0, 0, CallStats(0, 0, 0, 0, 0))
+  private val stats: CallStats = CallStats(0, 0, 0, 0, 0)
+
+  def initial(key: CommandKey) = {
+    CmdKeyStatsSnapshot(key, 0, 0, 0, 0, 0, stats)
+  }
 }
 
 case class CallStats(succCount: Long, failureCount: Long, ciruitBreakerOpenCount: Long, timeoutCount: Long, badRequest: Long) {

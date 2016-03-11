@@ -1,20 +1,18 @@
 package net.atinu.jailcall
 
-import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
+import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
 
 import akka.actor._
 import akka.jailcall.JailcallDispatcherConfigurator
 import akka.util.Timeout
 import com.typesafe.config.Config
-import net.atinu.jailcall.internal.JailedAction
-import net.atinu.jailcall.internal.CmdKeyStatsActor.GetCurrentStats
-import net.atinu.jailcall.internal.JailcallRootActor
-import JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor }
-import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
-import scala.util.{ Try, Failure, Success }
+import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor }
+import net.atinu.jailcall.internal.{ JailcallRootActor, JailedAction }
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.reflect.ClassTag
+import scala.util.{ Failure, Success }
 
 object Jailcall extends ExtensionId[Jailcall] {
   def createExtension(system: ExtendedActorSystem): Jailcall =
@@ -36,25 +34,25 @@ class Jailcall(val system: ExtendedActorSystem) extends Extension with Extension
     new JailcallDispatcherConfigurator(dispatcherConf, dispatchers.prerequisites)
   )
 
+  private val metricsBus = new MetricsEventBus
   private val rootActorName = config.getString("jailcall.root-actor-name")
-  private val jailcallRef = system.systemActorOf(JailcallRootActor.props, rootActorName)
+  private val jailcallRef = system.systemActorOf(JailcallRootActor.props(metricsBus), rootActorName)
 
   def loadMsDuration(key: String) = FiniteDuration(config.getDuration(key, TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
 
   private val maxCallDuration = loadMsDuration("jailcall.max-call-duration")
   private val maxCreateTime = loadMsDuration("jailcall.create-timeout")
-  val executor = new JailcallExecutor(jailcallRef, maxCreateTime, maxCallDuration, system.dispatcher)
+  val executor = new JailcallExecutor(jailcallRef, maxCreateTime, maxCallDuration, metricsBus, system.dispatcher)
 
   def lookup(): ExtensionId[_ <: Extension] = Jailcall
 }
 
-class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, ec: ExecutionContext) {
+class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, metricsBusImpl: MetricsEventBus, ec: ExecutionContext) {
 
   import akka.pattern.ask
 
   private val createTimeout = new Timeout(maxCreateTime)
   private val execTimeout = new Timeout(maxCallDuration)
-  private val statsTimeout = new Timeout(60, TimeUnit.MICROSECONDS)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
   def executeToRef(cmd: JailedExecution[_])(implicit receiver: ActorRef) = {
@@ -106,10 +104,9 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
     jailcallRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
   }
 
-  def statsFor(key: CommandKey): Future[CmdKeyStatsSnapshot] = {
-    val keyName = key.name
-    if (refCache.containsKey(keyName)) {
-      refCache.get(keyName).ask(GetCurrentStats)(statsTimeout).mapTo[CmdKeyStatsSnapshot]
-    } else Future.successful(CmdKeyStatsSnapshot.initial)
+  def statsFor(key: CommandKey): CmdKeyStatsSnapshot = {
+    metricsBusImpl.statsFor(key)
   }
+
+  def metricsBus: MetricsEventBus = metricsBusImpl
 }

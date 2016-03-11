@@ -3,11 +3,11 @@ package net.atinu.jailcall.internal
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreationFailed, CmdExecutorCreated, NoCmdExecutorForThatKey, CreateCmdExecutor }
-import net.atinu.jailcall.{ AsyncJailedExecution, JailedExecution, CommandKey }
+import net.atinu.jailcall.{ MetricsEventBus, AsyncJailedExecution, JailedExecution, CommandKey }
 
 import scala.util.{ Failure, Success }
 
-private[jailcall] class JailcallRootActor extends Actor with ActorLogging {
+private[jailcall] class JailcallRootActor(metricsBus: MetricsEventBus) extends Actor with ActorLogging {
 
   val msgKeyToExecutor = collection.mutable.Map.empty[String, ActorRef]
 
@@ -63,13 +63,13 @@ private[jailcall] class JailcallRootActor extends Actor with ActorLogging {
   }
 
   def createExecutorActor(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) = {
-    context.actorOf(JailedCommandExecutor.props(msgKey, cfg, dispatcherHolder))
+    context.actorOf(JailedCommandExecutor.props(msgKey, cfg, dispatcherHolder, metricsBus))
   }
 }
 
 object JailcallRootActor {
 
-  def props = Props(new JailcallRootActor)
+  def props(metricsBus: MetricsEventBus) = Props(new JailcallRootActor(metricsBus))
 
   case class CreateCmdExecutor(cmdKey: CommandKey, firstCmd: Option[JailedExecution[_]])
 

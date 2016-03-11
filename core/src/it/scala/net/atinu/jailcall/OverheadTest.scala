@@ -66,11 +66,11 @@ class OverheadTest extends ActorTestIt("OverheadTest", OverheadTest.config) with
     runSamplePar(sample.tail, 20)
     Thread.sleep(2000)
 
-    whenReady(ad.executor.statsFor(sample.head.cmdKey)) { stats =>
-      val end = System.currentTimeMillis() - start - 4000
-      val msPerCmd = end / sample.length
-      println(s"\nrunning $key: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats")
-    }
+    val stats = ad.executor.statsFor(sample.head.cmdKey)
+    val end = System.currentTimeMillis() - start - 4000
+    val msPerCmd = end / sample.length
+    println(s"\nrunning $key: took $end ms, msCmdAvg $msPerCmd ms, stats: \n$stats")
+
   }
 
   def runSamplePar(sample: IndexedSeq[JailedExecution[_]], par: Int) = {

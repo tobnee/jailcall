@@ -16,13 +16,13 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
 
-class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder)
+class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val dispatcherHolder: DispatcherHolder, metricsBus: MetricsEventBus)
     extends Actor with DiagnosticActorLogging with Stash {
 
   import akka.pattern.pipe
 
   val statsActor = startStatsActor()
-  var stats = CmdKeyStatsSnapshot.initial
+  var stats = CmdKeyStatsSnapshot.initial(cmdKey)
   val resetTimeoutMillis = cfg.circuitBreaker.resetTimeout.toMillis
 
   def receive = receiveClosed(isHalfOpen = false)
@@ -70,11 +70,11 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
 
   def receiveHalfOpen: Receive = {
     case ClosingCircuitBreakerFailed =>
-      log.debug("{}: closing circuit breaker failed", msgKey.name)
+      log.debug("{}: closing circuit breaker failed", cmdKey.name)
       openCircuitBreaker()
       unstashAll()
     case ClosingCircuitBreakerSucceed =>
-      log.debug("{}: closing circuit breaker succeeded", msgKey.name)
+      log.debug("{}: closing circuit breaker succeeded", cmdKey.name)
       context.become(receiveClosed(isHalfOpen = false))
       unstashAll()
     case _ =>
@@ -109,7 +109,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
       if (isAsync) "async" else "sync"
 
     if (log.isDebugEnabled) {
-      log.debug("{}: execute {}{} command{}", msgKey, isAsyncMsg, isFallbackMsg, halfOpenMsg)
+      log.debug("{}: execute {}{} command{}", cmdKey, isAsyncMsg, isFallbackMsg, halfOpenMsg)
     }
   }
 
@@ -228,11 +228,11 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
   }
 
   def startStatsActor() = {
-    context.actorOf(CmdKeyStatsActor.props(msgKey, cfg.metrics), s"cmd-key-stats")
+    context.actorOf(CmdKeyStatsActor.props(cmdKey, cfg.metrics, metricsBus), s"cmd-key-stats")
   }
 
   def waitForApproval() = {
-    log.debug("{}: become half open", msgKey.name)
+    log.debug("{}: become half open", cmdKey.name)
     context.become(receiveHalfOpen)
   }
 
@@ -261,7 +261,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
 
   def openCircuitBreaker(): Unit = {
     import context.dispatcher
-    log.debug("{}: open circuit breaker for {}, calls will fail fast", msgKey.name, cfg.circuitBreaker.resetTimeout)
+    log.debug("{}: open circuit breaker for {}, calls will fail fast", cmdKey.name, cfg.circuitBreaker.resetTimeout)
     context.system.scheduler.scheduleOnce(cfg.circuitBreaker.resetTimeout, self, TryCloseCircuitBreaker)
     context.become(receiveOpen(calcCircuitBreakerEndTime))
   }
@@ -276,7 +276,7 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
     else 0.millis
   }
 
-  val staticMdcInfo = Map("cmdKey" -> msgKey.name)
+  val staticMdcInfo = Map("cmdKey" -> cmdKey.name)
 
   def setMdcContext() = log.mdc(staticMdcInfo)
 
@@ -286,8 +286,8 @@ class JailedCommandExecutor(val msgKey: CommandKey, val cfg: MsgConfig, val disp
 
 object JailedCommandExecutor {
 
-  def props(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) =
-    Props(new JailedCommandExecutor(msgKey, cfg, dispatcherHolder))
+  def props(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder, metricsBus: MetricsEventBus) =
+    Props(new JailedCommandExecutor(msgKey, cfg, dispatcherHolder, metricsBus))
 
   private[jailcall] case object TryCloseCircuitBreaker
   private[jailcall] case object ClosingCircuitBreakerFailed
