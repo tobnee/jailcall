@@ -70,3 +70,35 @@ class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
 }
 ```
 
+### Get stats for a command
+*jailcall* offers you ways to query statistics about runtime behaviour given the `CommandKey` of the command in question 
+```tut:silent
+object JailcallApp extends App {
+    val system = ActorSystem("JailcallSystem")
+    val jailcall = Jailcall(system).executor
+    
+    val cmdKey = CommandKey("my-command")
+    // create and call commands with that key ...
+    
+    val metrics: CmdKeyStatsSnapshot = jailcall.statsFor(cmdKey)
+    
+    // obtain stats about execution times
+    val mean = metrics.latencyStats.mean
+    val p95Time = metrics.latencyStats.p95Time
+    
+    // obtain stats about call statistics
+    val failureCount = metrics.callStats.failureCount
+}
+```
+
+### Subscribe to stats
+```tut:silent
+class StatsDashboardActor(jailcall: JailcallExecutor, cmdKey: CommandKey) extends Actor {
+    jailcall.metricsBus.subscribe(self, cmdKey)
+
+    def receive = {
+        case metrics: CmdKeyStatsSnapshot => 
+            // ...
+    }
+}
+```
