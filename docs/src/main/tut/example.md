@@ -29,7 +29,8 @@ def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
 ```
 
 ### Pipe a result to a future
-Using the Future-API **jailcall** can be used outside Actors. 
+Using the Future-API **jailcall** can be used outside actors or in situations where the actor does not need to transform command
+results. 
 ```tut:silent
 import scala.concurrent.Future
 import akka.actor.ActorSystem
