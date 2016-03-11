@@ -8,10 +8,9 @@ case class UserRepos(user: String, repos: List[String])
 
 class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 
-    def execute = getGitHupRepos()
-    
-    def getGitHupRepos() = ???
-
+  def execute = getGitHupRepos()
+  
+  def getGitHupRepos() = ???
 }
 ```
 
@@ -19,12 +18,11 @@ class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 ```tut:silent
 def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
 
-    def cmdKey = CommandKey("get-repos-for-user")
+  def cmdKey = CommandKey("get-repos-for-user")
 
-    def execute = getGitHupRepos()
-    
-    def getGitHupRepos() = ???
-
+  def execute = getGitHupRepos()
+  
+  def getGitHupRepos() = ???
 }
 ```
 
@@ -36,9 +34,9 @@ import scala.concurrent.Future
 import akka.actor.ActorSystem
 
 object JailcallApp extends App {
-    val system = ActorSystem("JailcallSystem")
-    
-    Jailcall(system).executor.executeToFuture(new GitHubApiCall("tobnee"))
+  val system = ActorSystem("JailcallSystem")
+  
+  Jailcall(system).executor.executeToFuture(new GitHubApiCall("tobnee"))
 }
 ```
 
@@ -56,17 +54,17 @@ case class GetUserReposResponse(repos: UserRepos)
 case class GetUserReposFailedResponse(failure: Throwable)
 
 class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
-    
-    def receive = {
-        case GetReposForUser(user) => 
-            jailcall.executeToRefWithContext(new GitHubApiCall(user))
+  
+  def receive = {
+    case GetReposForUser(user) => 
+      jailcall.executeToRefWithContext(new GitHubApiCall(user))
 
-        case JailcallExecutionResult.Success(result: UserRepos, originalSender) =>
-            originalSender ! GetUserReposResponse(result)
-            
-        case JailcallExecutionResult.FailureStatus(exception, originalSender) =>
-            originalSender ! GetUserReposFailedResponse(exception)
-    }
+    case JailcallExecutionResult.Success(result: UserRepos, originalSender) =>
+      originalSender ! GetUserReposResponse(result)
+    
+    case JailcallExecutionResult.FailureStatus(exception, originalSender) =>
+      originalSender ! GetUserReposFailedResponse(exception)
+  }
 }
 ```
 
@@ -74,31 +72,31 @@ class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
 *jailcall* offers you ways to query statistics about runtime behaviour given the `CommandKey` of the command in question 
 ```tut:silent
 object JailcallApp extends App {
-    val system = ActorSystem("JailcallSystem")
-    val jailcall = Jailcall(system).executor
-    
-    val cmdKey = CommandKey("my-command")
-    // create and call commands with that key ...
-    
-    val metrics: CmdKeyStatsSnapshot = jailcall.statsFor(cmdKey)
-    
-    // obtain stats about execution times
-    val mean = metrics.latencyStats.mean
-    val p95Time = metrics.latencyStats.p95Time
-    
-    // obtain stats about call statistics
-    val failureCount = metrics.callStats.failureCount
+  val system = ActorSystem("JailcallSystem")
+  val jailcall = Jailcall(system).executor
+  
+  val cmdKey = CommandKey("my-command")
+  // create and call commands with that key ...
+  
+  val metrics: CmdKeyStatsSnapshot = jailcall.statsFor(cmdKey)
+  
+  // obtain stats about execution times
+  val mean = metrics.latencyStats.mean
+  val p95Time = metrics.latencyStats.p95Time
+  
+  // obtain stats about call statistics
+  val failureCount = metrics.callStats.failureCount
 }
 ```
 
 ### Subscribe to stats
 ```tut:silent
 class StatsDashboardActor(jailcall: JailcallExecutor, cmdKey: CommandKey) extends Actor {
-    jailcall.metricsBus.subscribe(self, cmdKey)
+  jailcall.metricsBus.subscribe(self, cmdKey)
 
-    def receive = {
-        case metrics: CmdKeyStatsSnapshot => 
-            // ...
-    }
+  def receive = {
+    case metrics: CmdKeyStatsSnapshot => 
+    // ...
+  }
 }
 ```

@@ -20,10 +20,9 @@ case class UserRepos(user: String, repos: List[String])
 
 class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 
-    def execute = getGitHupRepos()
+  def execute = getGitHupRepos()
     
-    def getGitHupRepos() = ???
-
+  def getGitHupRepos() = ???
 }
 ```
 
@@ -34,11 +33,11 @@ import scala.concurrent.Future
 import akka.actor.ActorSystem
 
 object JailcallApp extends App {
-    val system = ActorSystem("JailcallSystem")
-    val jailcall = Jailcall(system).executor
-    
-    val repos: Future[JailcallExecutionResult[UserRepos]] = 
-        jailcall.executeToFuture(new GitHubApiCall("tobnee"))
+  val system = ActorSystem("JailcallSystem")
+  val jailcall = Jailcall(system).executor
+  
+  val repos: Future[JailcallExecutionResult[UserRepos]] = 
+      jailcall.executeToFuture(new GitHubApiCall("tobnee"))
 }
 ```
 
