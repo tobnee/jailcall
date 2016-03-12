@@ -159,23 +159,11 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
   def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T]): Try[T] = {
     setMdcContext()
     val statsRes = StatsResult.captureStart[T](result, startTimeMs)
-    val recartExec = applyCategorization(cmd, statsRes)
-    updateCallStats(cmd.cmdKey, totalStartTime, recartExec)
-    recartExec match {
+    updateCallStats(cmd.cmdKey, totalStartTime, statsRes)
+    statsRes match {
       case Success(v) => Success(v.res)
       case Failure(t) => Failure(t.getCause)
     }
-  }
-
-  def applyCategorization[T](msg: JailedExecution[T], exec: Try[StatsResult[T]]): Try[StatsResult[T]] = msg match {
-    case categorizer: SuccessCategorization =>
-      exec.map { res =>
-        categorizer.categorize.applyOrElse(res.res, (x: categorizer.R) => IsSuccess) match {
-          case IsSuccess => res
-          case IsBadRequest => res.error(BadRequestException.apply("result $res categorized as bad request"))
-        }
-      }
-    case _ => exec
   }
 
   def callBreak[T](cmd: NamedCommand, remainingDuration: FiniteDuration): Future[T] = {

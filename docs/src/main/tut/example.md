@@ -3,6 +3,7 @@
 ### Create a `JailedCommand`
 ```tut:silent
 import net.atinu.jailcall._
+import scala.concurrent.Future
 
 case class UserRepos(user: String, repos: List[String])
 
@@ -10,7 +11,7 @@ class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 
   def execute = getGitHupRepos()
   
-  def getGitHupRepos() = ???
+  def getGitHupRepos(): Future[UserRepos] = ???
 }
 ```
 
@@ -30,11 +31,11 @@ def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
 Using the Future-API **jailcall** can be used outside actors or in situations where the actor does not need to transform command
 results. 
 ```tut:silent
-import scala.concurrent.Future
 import akka.actor.ActorSystem
 
 object JailcallApp extends App {
   val system = ActorSystem("JailcallSystem")
+  implicit def executionContext = system.dispatcher
   
   Jailcall(system).executor.executeToFuture(new GitHubApiCall("tobnee"))
 }
@@ -54,6 +55,8 @@ case class GetUserReposResponse(repos: UserRepos)
 case class GetUserReposFailedResponse(failure: Throwable)
 
 class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
+  // execution context for the command
+  import context.dispatcher
   
   def receive = {
     case GetReposForUser(user) => 
@@ -65,6 +68,49 @@ class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
     case JailcallExecutionResult.FailureStatus(exception, originalSender) =>
       originalSender ! GetUserReposFailedResponse(exception)
   }
+}
+```
+
+### Create a `JailedCommand` with fallback
+To increase the resiliency of a command it can make sense to provide fallback logic in case something goes wrong with a
+command execution. Fallbacks in *jallcall* are also commands and will be processed with the same rules as others.
+```tut:silent
+case class UserRepos(user: String, repos: List[String])
+
+class GitHubApiCall(user: String, cacheLookup: AsyncJailedCommand[UserRepos]) extends 
+  AsyncJailedCommand[UserRepos] with CmdFallback {
+
+  def execute = getGitHupRepos()
+  
+  def getGitHupRepos(): Future[UserRepos] = ???
+  
+  def fallback = cacheLookup
+}
+```
+
+## Filter bad requests
+Sometimes you want to mark a command as a failure even if it is considered a success during normal command processing.
+A good example is a HTTP BadRequest. In this case the `Future` will be executed successfully but the command is not
+considered to be a success. Another situation where you would want to mark a command as bad request is when the command
+yields a failure but the fallback logic should not be executed. In both cases a failed command with the result BadRequestException
+signals *jailcall* that it should treat the result as a bad request. Bad requests are also not treated as failures in the
+error statistics meaning that bad requests can not lead to open circuit breakers.
+```tut:silent
+import scala.concurrent.ExecutionContext
+
+case class SimpleHttpResponse(status: Int, body: String)
+
+class GitHubApiCall(user: String)(implicit ec: ExecutionContext) extends AsyncJailedCommand[UserRepos] {
+ 
+   def execute = AsyncJailedExecution
+     .filterBadRequest(getGitHupRepos())(isBadRequest)
+     .map(toUserRepo)
+   
+   def isBadRequest(req: SimpleHttpResponse): Boolean = req.status / 100 == 4 
+   
+   def getGitHupRepos(): Future[SimpleHttpResponse] = ???
+   
+   def toUserRepo(req: SimpleHttpResponse): UserRepos = ???
 }
 ```
 

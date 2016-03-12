@@ -2,6 +2,7 @@ package net.atinu
 
 import akka.actor.{ Status, ActorRef }
 
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NoStackTrace
 
 package object jailcall {

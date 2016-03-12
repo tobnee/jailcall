@@ -61,14 +61,14 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
     expectMsg(Status.Failure(JailcallExecutionException(err)))
   }
 
-  test("No fallback is selected in case of a success categorized as bad request") {
-    Jailcall(system).executor.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization {
+  test("No fallback is selected in case of a bad request") {
+    Jailcall(system).executor.executeToRef(new AsyncJailedExecution[String] with CmdFallback {
       def cmdKey = CommandKey("load-data-3")
-      def execute: Future[String] = Future.successful("succFuture")
-      def categorize = {
-        case "succFuture" => IsBadRequest
-        case _ => IsSuccess
+      def execute: Future[String] = {
+        import system.dispatcher
+        AsyncJailedExecution.filterBadRequest(Future.successful("succFuture"))(_ == "succFuture")
       }
+      def fallback = AsyncJailedCommand.apply("load-fallback", Future.successful("works"))
     })
     expectMsgPF(hint = "a DefendBadRequestException") {
       case Status.Failure(JailcallExecutionException(e, _)) =>
@@ -76,15 +76,21 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
     }
   }
 
-  test("Fallback is selected in case of a non existing result categorization") {
-    Jailcall(system).executor.executeToRef(new AsyncJailedExecution[String] with SuccessCategorization {
+  test("No fallback is selected in case of a bad request result categorization") {
+    Jailcall(system).executor.executeToRef(new AsyncJailedExecution[String] with CmdFallback {
       def cmdKey = CommandKey("load-data-3")
-      def execute: Future[String] = Future.successful("succFutur2e")
-      def categorize = {
-        case "succFuture" => IsBadRequest
+      def execute: Future[String] = {
+        import system.dispatcher
+        AsyncJailedExecution.categorizeResult(Future.successful("succFuture")) {
+          case "succFuture" => IsBadRequest
+        }
       }
+      def fallback = AsyncJailedCommand.apply("load-fallback", Future.successful("works"))
     })
-    expectResult("succFutur2e")
+    expectMsgPF(hint = "a DefendBadRequestException") {
+      case Status.Failure(JailcallExecutionException(e, _)) =>
+        e shouldBe a[BadRequestException]
+    }
   }
 
   test("A dynamic (cmd based) fallback is used in case of failure") {

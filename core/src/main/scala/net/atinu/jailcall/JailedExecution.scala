@@ -1,7 +1,7 @@
 package net.atinu.jailcall
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait NamedCommand {
 
@@ -32,7 +32,21 @@ trait CmdFallback { self: JailedExecution[_] =>
   def fallback: JailedExecution[R @uncheckedVariance]
 }
 
-trait SuccessCategorization { self: JailedExecution[_] =>
+object AsyncJailedExecution {
 
-  def categorize: PartialFunction[R @uncheckedVariance, ResultCategory]
+  def filterBadRequest[T](in: Future[T])(isBadRequest: T => Boolean)(implicit ec: ExecutionContext): Future[T] = {
+    in.flatMap {
+      case x if isBadRequest(x) => Future.failed(BadRequestException.apply("result $x categorized as bad request"))
+      case ok => in
+    }
+  }
+
+  def categorizeResult[T](in: Future[T])(cat: PartialFunction[T, ResultCategory])(implicit ec: ExecutionContext): Future[T] = {
+    in.flatMap { res =>
+      cat.applyOrElse(res, (x: T) => IsSuccess) match {
+        case IsSuccess => Future.successful(res)
+        case IsBadRequest => Future.failed(BadRequestException.apply("result $res categorized as bad request"))
+      }
+    }
+  }
 }
