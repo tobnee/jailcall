@@ -11,18 +11,20 @@ lazy val root = project.in(file("core"))
   )
   .settings(common)
   .settings(Defaults.itSettings)
+  .settings(ghPages)
   .configs(IntegrationTest)
 
 lazy val docs = project.in(file("docs"))
   .settings(tutSettings)
   .settings(common)
-  .settings(site.settings)
-  .settings(site.includeScaladoc())
+  .settings(ghPages)
   .settings(site.addMappingsToSiteDir(tut, "tut"))
-  .settings(ghpages.settings)
-  .settings(git.remoteRepo := "git@github.com:tobnee/jailcall.git")
   .dependsOn(root)
 
 lazy val common = Seq(
   scalaVersion := "2.11.8"
 )
+
+lazy val ghPages = site.settings ++ site.includeScaladoc() ++ Seq(
+  git.remoteRepo := "git@github.com:tobnee/jailcall.git"
+) ++ ghpages.settings
