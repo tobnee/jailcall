@@ -16,6 +16,12 @@ lazy val core = project.in(file("core"))
 lazy val docs = project.in(file("docs"))
   .settings(tutSettings)
   .settings(common)
+  .settings(scalacOptions in (Compile, doc) ++= Seq(
+    "-skip-packages", Seq(
+      "net.atinu.jailcall.internal",
+      "akka"
+    ).mkString(":")
+  ))
   .settings(ghPages)
   .settings(site.addMappingsToSiteDir(tut, "tut"))
   .settings(site.addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), "latest/api"))
