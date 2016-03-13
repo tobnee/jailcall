@@ -1,5 +1,5 @@
 
-lazy val root = project.in(file("core"))
+lazy val core = project.in(file("core"))
   .settings(name := "jailcall")
   .settings(version := "0.1")
   .settings(
@@ -11,7 +11,6 @@ lazy val root = project.in(file("core"))
   )
   .settings(common)
   .settings(Defaults.itSettings)
-  .settings(ghPages)
   .configs(IntegrationTest)
 
 lazy val docs = project.in(file("docs"))
@@ -19,12 +18,15 @@ lazy val docs = project.in(file("docs"))
   .settings(common)
   .settings(ghPages)
   .settings(site.addMappingsToSiteDir(tut, "tut"))
-  .dependsOn(root)
+  .settings(site.addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), "latest/api"))
+  .settings(unidocSettings)
+  .dependsOn(core)
+  .aggregate(core)
 
 lazy val common = Seq(
   scalaVersion := "2.11.8"
 )
 
-lazy val ghPages = site.settings ++ site.includeScaladoc() ++ Seq(
+lazy val ghPages = site.settings ++ Seq(
   git.remoteRepo := "git@github.com:tobnee/jailcall.git"
 ) ++ ghpages.settings
