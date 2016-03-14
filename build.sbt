@@ -1,3 +1,6 @@
+lazy val root = project.in(file("."))
+    .settings(common)
+    .settings(publishArtifact := false)
 
 lazy val core = project.in(file("core"))
   .settings(
@@ -25,6 +28,7 @@ lazy val docs = project.in(file("docs"))
   .settings(site.addMappingsToSiteDir(tut, "tut"))
   .settings(site.addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), "latest/api"))
   .settings(unidocSettings)
+  .settings(publishArtifact := false)
   .dependsOn(core)
   .aggregate(core)
 
