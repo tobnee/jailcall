@@ -47,7 +47,7 @@ object JailcallApp extends App {
   val system = ActorSystem("JailcallSystem")
   val jailcall = Jailcall(system).executor
   
-  val repos: Future[JailcallExecutionResult[UserRepos]] = 
+  val repos: Future[UserRepos] = 
       jailcall.executeToFuture(new GitHubApiCall("tobnee"))
 }
 ```
