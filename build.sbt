@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 lazy val root = project.in(file("."))
-    .settings(common)
+    .settings(scalaSettings)
     .settings(publishArtifact := false)
 
 lazy val akkaVersion = "2.4.2"
@@ -13,13 +13,17 @@ lazy val core = project.in(file("core"))
       baseDependencies ++ akkaDepenencies(akkaVersion)
   )
   .settings(common)
+  .settings(scalaSettings)
   .settings(publishSettings)
   .settings(Defaults.itSettings)
   .configs(IntegrationTest)
 
 lazy val docs = project.in(file("docs"))
   .settings(tutSettings)
-  .settings(common)
+  .settings(scalaSettings)
+  .settings(libraryDependencies ++=
+      baseDependencies ++ akkaDepenencies(akkaVersion)
+  )
   .settings(scalacOptions in (Compile, doc) ++= Seq(
     "-skip-packages", Seq(
       "net.atinu.jailcall.internal",
@@ -37,8 +41,11 @@ lazy val docs = project.in(file("docs"))
 lazy val common = Seq(
   organization := "net.atinu",
   version := "0.1.0-SNAPSHOT",
-  scalaVersion := "2.11.8",
   name := "jailcall"
+)
+
+lazy val scalaSettings = Seq(
+  scalaVersion := "2.11.8"
 )
 
 lazy val ghPages = site.settings ++ Seq(
