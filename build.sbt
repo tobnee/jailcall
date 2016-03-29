@@ -10,7 +10,7 @@ lazy val akkaVersion23 = "2.3.14"
 lazy val core = project.in(file("core"))
   .settings(
     libraryDependencies ++=
-      baseDependencies ++ akkaDepenencies(akkaVersion)
+      baseDependencies(withIt = true) ++ akkaDepenencies(akkaVersion, withIt = true)
   )
   .settings(common)
   .settings(scalaSettings)
@@ -22,7 +22,7 @@ lazy val docs = project.in(file("docs"))
   .settings(tutSettings)
   .settings(scalaSettings)
   .settings(libraryDependencies ++=
-      baseDependencies ++ akkaDepenencies(akkaVersion)
+      baseDependencies() ++ akkaDepenencies(akkaVersion)
   )
   .settings(scalacOptions in (Compile, doc) ++= Seq(
     "-skip-packages", Seq(
@@ -78,15 +78,17 @@ lazy val publishSettings = Seq(
 )
 
 lazy val coreAkka23 = project.aggregate(core).settings(
-  libraryDependencies := baseDependencies ++ akkaDepenencies(akkaVersion23)
+  libraryDependencies := baseDependencies() ++ akkaDepenencies(akkaVersion23)
 )
 
-lazy val baseDependencies = Seq(
+def baseDependencies(withIt: Boolean = false) = Seq(
   "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
-  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.6" % testScope(withIt)
 )
 
-def akkaDepenencies(version: String) = Seq(
+def akkaDepenencies(version: String, withIt: Boolean = false) = Seq(
   "com.typesafe.akka" %% "akka-actor" % version % "provided",
-  "com.typesafe.akka" %% "akka-testkit" % version % "test"
+  "com.typesafe.akka" %% "akka-testkit" % version % testScope(withIt)
 )
+
+def testScope(withIt: Boolean) = if(withIt) "test, it" else "test"
