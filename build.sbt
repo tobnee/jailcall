@@ -1,14 +1,16 @@
+import sbt.Keys._
+
 lazy val root = project.in(file("."))
     .settings(common)
     .settings(publishArtifact := false)
 
+lazy val akkaVersion = "2.4.2"
+lazy val akkaVersion23 = "2.3.14"
+
 lazy val core = project.in(file("core"))
   .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % "2.4.2",
-      "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
-      "com.typesafe.akka" %% "akka-testkit" % "2.4.0" % "test, it",
-      "org.scalatest" %% "scalatest" % "2.2.6" % "test, it")
+    libraryDependencies ++=
+      baseDependencies ++ akkaDepenencies(akkaVersion)
   )
   .settings(common)
   .settings(publishSettings)
@@ -66,4 +68,18 @@ lazy val publishSettings = Seq(
           <url>http://atinu.net/</url>
         </developer>
       </developers>)
+)
+
+lazy val coreAkka23 = project.aggregate(core).settings(
+  libraryDependencies := baseDependencies ++ akkaDepenencies(akkaVersion23)
+)
+
+lazy val baseDependencies = Seq(
+  "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+)
+
+def akkaDepenencies(version: String) = Seq(
+  "com.typesafe.akka" %% "akka-actor" % version % "provided",
+  "com.typesafe.akka" %% "akka-testkit" % version % "test"
 )
