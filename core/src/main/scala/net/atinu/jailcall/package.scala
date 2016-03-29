@@ -11,6 +11,9 @@ package object jailcall {
     def asKey = CommandKey.apply(name)
   }
 
+  /**
+   * A specific exception type which signals that jailcall should not include this failed message in any error statistic
+   */
   sealed trait BadRequestException extends Throwable
 
   class BadRequestExceptionWithCause(message: String, cause: Throwable) extends RuntimeException(message, cause) with BadRequestException
@@ -60,8 +63,16 @@ package object jailcall {
     }
   }
 
+  /**
+   * The result of a sucessful execution in jailcall
+   */
   case class JailcallExecutionResult[T](result: T, originalSender: Option[ActorRef] = None)
 
+  /**
+   * The result of a failed execution in jailcall
+   * @param failure
+   * @param originalSender
+   */
   case class JailcallExecutionException(failure: Throwable, val originalSender: Option[ActorRef] = None)
     extends RuntimeException(failure) with NoStackTrace
 

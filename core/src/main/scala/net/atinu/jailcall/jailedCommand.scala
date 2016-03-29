@@ -13,16 +13,16 @@ trait DefaultCommandNaming extends NamedCommand {
   }
 }
 
-object AsyncJailedCommand {
+object ScalaFutureCommand {
 
-  def apply[T](key: String, exec: => Future[T]): AsyncJailedExecution[T] = new AsyncJailedExecution[T] {
+  def apply[T](key: String, exec: => Future[T]): ScalaFutureExecution[T] = new ScalaFutureExecution[T] {
     def cmdKey = key.asKey
 
     def execute = exec
   }
 
-  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T]): AsyncJailedExecution[T] with CmdFallback =
-    new AsyncJailedExecution[T] with CmdFallback {
+  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T]): ScalaFutureExecution[T] with CmdFallback =
+    new ScalaFutureExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -31,18 +31,21 @@ object AsyncJailedCommand {
     }
 }
 
-abstract class AsyncJailedCommand[T] extends AsyncJailedExecution[T] with DefaultCommandNaming
+/**
+ * A default [[ScalaFutureExecution]] which infers the [[CommandKey]] based on the name of the class.
+ */
+abstract class ScalaFutureCommand[T] extends ScalaFutureExecution[T] with DefaultCommandNaming
 
-object SyncJailedCommand {
+object BlockingCommand {
 
-  def apply[T](key: String, exec: => T): SyncJailedExecution[T] = new SyncJailedExecution[T] {
+  def apply[T](key: String, exec: => T): BlockingExecution[T] = new BlockingExecution[T] {
     def cmdKey = key.asKey
 
     def execute = exec
   }
 
-  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T]): SyncJailedExecution[T] with CmdFallback =
-    new SyncJailedExecution[T] with CmdFallback {
+  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T]): BlockingExecution[T] with CmdFallback =
+    new BlockingExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 
       def execute = exec
@@ -52,4 +55,7 @@ object SyncJailedCommand {
 
 }
 
-abstract class SyncJailedCommand[T] extends SyncJailedExecution[T] with DefaultCommandNaming
+/**
+ * A default [[ScalaFutureExecution]] which infers the [[CommandKey]] based on the name of the class.
+ */
+abstract class BlockingCommand[T] extends BlockingExecution[T] with DefaultCommandNaming

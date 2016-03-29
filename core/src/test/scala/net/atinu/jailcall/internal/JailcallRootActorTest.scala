@@ -40,7 +40,7 @@ class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallR
     val msgKey = CommandKey("two")
     defendRoot ! CreateCmdExecutor.withKey(msgKey)
     expectMsgType[CmdExecutorCreated]
-    defendRoot ! JailedAction.now(new SyncJailedExecution[String] {
+    defendRoot ! JailedAction.now(new BlockingExecution[String] {
       def cmdKey = msgKey
       def execute = ""
     })
@@ -54,7 +54,7 @@ class JailcallRootActorTest extends ActorTest("JailcallRootActorTest", JailcallR
   test("report missing executor on forward") {
     val defendRoot = system.actorOf(JailcallRootActor.props(metricsBus))
     val msgKey = CommandKey("three")
-    defendRoot ! JailedAction.now(new SyncJailedExecution[String] {
+    defendRoot ! JailedAction.now(new BlockingExecution[String] {
       def cmdKey = msgKey
       def execute = ""
     })

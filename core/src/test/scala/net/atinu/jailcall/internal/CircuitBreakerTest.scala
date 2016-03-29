@@ -6,7 +6,7 @@ import akka.pattern.CircuitBreakerOpenException
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.jailcall._
 import net.atinu.jailcall.util.ActorTest
-import net.atinu.jailcall.{ AsyncJailedCommand$, CommandKey }
+import net.atinu.jailcall.{ CommandKey, ScalaFutureCommand }
 import net.atinu.jailcall.internal._
 
 import scala.concurrent.Future
@@ -27,7 +27,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
 
     ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
-    ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo", Future.successful("na")))
+    ref ! JailedAction.now(ScalaFutureCommand.apply(key = "nfoo", Future.successful("na")))
     expectResult("na")
   }
 
@@ -40,7 +40,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
 
     ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 15, failureCount = 6, ciruitBreakerOpenCount = 0, timeoutCount = 1, badRequest = 0))
-    ref ! JailedAction.now(AsyncJailedCommand.apply(key = "nfoo2", Future.successful("na")))
+    ref ! JailedAction.now(ScalaFutureCommand.apply(key = "nfoo2", Future.successful("na")))
     expectResult("na")
   }
 
@@ -67,13 +67,13 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
 
     ref ! CmdKeyStatsSnapshot(commandKey, LatencyStats.initial, callStats =
       CallStats(succCount = 2, failureCount = 17, ciruitBreakerOpenCount = 0, timeoutCount = 3, badRequest = 0))
-    ref ! JailedAction.now(AsyncJailedCommand.apply(key = "foo", Future.successful("a")))
+    ref ! JailedAction.now(ScalaFutureCommand.apply(key = "foo", Future.successful("a")))
   }
 
   test("cb closed / halfopen / open circle") {
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = CommandKey("foo2")
-    val cmd = JailedAction.now(AsyncJailedCommand.apply(key = commandKey.name, Future.successful("b")))
+    val cmd = JailedAction.now(ScalaFutureCommand.apply(key = commandKey.name, Future.successful("b")))
     val ref = system.actorOf(
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )
@@ -94,7 +94,7 @@ class CircuitBreakerTest extends ActorTest("CircuitBreakerTest") {
     val thisCfg = cfg(rvt = 20, minFailurePercent = 50, callTimeoutMs = 500, resetTimeoutMs = 500)
     val commandKey = CommandKey("foo2")
     val failure = new IllegalStateException("naa")
-    val cmd = JailedAction.now(AsyncJailedCommand.apply(key = commandKey.name, Future.failed(failure)))
+    val cmd = JailedAction.now(ScalaFutureCommand.apply(key = commandKey.name, Future.failed(failure)))
     val ref = system.actorOf(
       JailedCommandExecutor.props(commandKey, thisCfg, dispatcherHolder, metricsBus)
     )

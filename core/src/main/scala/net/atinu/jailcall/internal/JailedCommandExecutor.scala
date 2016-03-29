@@ -28,18 +28,18 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case JailedAction(startTime, senderRef, msg: AsyncJailedExecution[_]) =>
+    case JailedAction(startTime, senderRef, msg: ScalaFutureExecution[_]) =>
       implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
       toResCommand(callAsync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
 
-    case JailedAction(startTime, senderRef, msg: SyncJailedExecution[_]) =>
+    case JailedAction(startTime, senderRef, msg: BlockingExecution[_]) =>
       implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
       toResCommand(callSync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
 
-    case FallbackAction(promise, startTime, msg: AsyncJailedExecution[_]) =>
+    case FallbackAction(promise, startTime, msg: ScalaFutureExecution[_]) =>
       fallbackFuture(promise, callAsync(msg, startTime, isFallback = true, isHalfOpen))
 
-    case FallbackAction(promise, startTime, msg: SyncJailedExecution[_]) =>
+    case FallbackAction(promise, startTime, msg: BlockingExecution[_]) =>
       fallbackFuture(promise, callSync(msg, startTime, isFallback = true, isHalfOpen))
 
     case snap: CmdKeyStatsSnapshot =>
@@ -84,12 +84,12 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
   def fallbackFuture[T](promise: Promise[T], res: Future[T]) =
     promise.completeWith(res)
 
-  def callSync[T](msg: SyncJailedExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
+  def callSync[T](msg: BlockingExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = false, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, Future.apply(msg.execute)(dispatcherHolder.dispatcher))
   }
 
-  def callAsync[T](msg: AsyncJailedExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
+  def callAsync[T](msg: ScalaFutureExecution[T], totalStartTime: Long, isFallback: Boolean, breakOnSingleFailure: Boolean): Future[T] = {
     cmdExecDebugMsg(isAsync = true, isFallback, breakOnSingleFailure)
     execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }

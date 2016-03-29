@@ -3,7 +3,7 @@ package net.atinu.jailcall.internal
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreationFailed, CmdExecutorCreated, NoCmdExecutorForThatKey, CreateCmdExecutor }
-import net.atinu.jailcall.{ MetricsEventBus, AsyncJailedExecution, JailedExecution, CommandKey }
+import net.atinu.jailcall._
 
 import scala.util.{ Failure, Success }
 
@@ -18,7 +18,7 @@ private[jailcall] class JailcallRootActor(metricsBus: MetricsEventBus) extends A
   def receive = {
     case CreateCmdExecutor(cmdKey, Some(exec)) =>
       val needsIsolation = exec match {
-        case _: AsyncJailedExecution[_] => false
+        case _: ScalaFutureExecution[_] => false
         case _ => true
       }
       createExecutor(cmdKey, needsIsolation = needsIsolation)

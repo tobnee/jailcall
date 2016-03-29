@@ -8,31 +8,51 @@ trait NamedCommand {
   def cmdKey: CommandKey
 }
 
+/**
+ * Parent class for all execution types supported by jailcall.
+ *
+ * @tparam RC result type of the execution
+ */
 sealed trait JailedExecution[RC] extends NamedCommand {
 
   type R = RC
+
+  /** container type of the execution result */
   type E
 
   def execute: E
 }
 
-trait AsyncJailedExecution[RC] extends NamedCommand with JailedExecution[RC] {
+/**
+ * A [[JailedExecution]] based on a [[scala.concurrent.Future]]
+ *
+ * @tparam RC result type of the execution
+ */
+trait ScalaFutureExecution[RC] extends NamedCommand with JailedExecution[RC] {
 
   type E = Future[RC]
 
 }
 
-trait SyncJailedExecution[RC] extends NamedCommand with JailedExecution[RC] {
+/**
+ * A [[JailedExecution]] based on a blocking operation
+ *
+ * @tparam RC result type of the execution
+ */
+trait BlockingExecution[RC] extends NamedCommand with JailedExecution[RC] {
 
   type E = RC
 }
 
+/**
+ * Provides a fallback for a failed [[JailedExecution]]
+ */
 trait CmdFallback { self: JailedExecution[_] =>
 
   def fallback: JailedExecution[R @uncheckedVariance]
 }
 
-object AsyncJailedExecution {
+object ScalaFutureExecution {
 
   def filterBadRequest[T](in: Future[T])(isBadRequest: T => Boolean)(implicit ec: ExecutionContext): Future[T] = {
     in.flatMap {

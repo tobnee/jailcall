@@ -15,6 +15,9 @@ object CommandKey {
     }
 }
 
+/**
+ * The identity of a [[JailedExecution]]
+ */
 trait CommandKey {
   def name: String
 }

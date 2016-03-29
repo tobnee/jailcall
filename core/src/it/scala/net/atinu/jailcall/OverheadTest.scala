@@ -140,14 +140,14 @@ object OverheadTest {
   }
 
   class TestExecAsync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
-    extends TestExec(key, delay, result, scheduler, ec) with AsyncJailedExecution[Int] {
+    extends TestExec(key, delay, result, scheduler, ec) with ScalaFutureExecution[Int] {
 
     def execute: Future[Int] = call()
 
   }
 
   class TestExecSync(key: String, delay: FiniteDuration, result: Try[Int], scheduler: Scheduler, ec: ExecutionContext)
-    extends TestExec(key, delay, result, scheduler, ec) with SyncJailedExecution[Int] {
+    extends TestExec(key, delay, result, scheduler, ec) with BlockingExecution[Int] {
     import scala.concurrent.duration._
 
 

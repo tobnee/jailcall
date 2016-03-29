@@ -12,6 +12,9 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
+/**
+ * Public gateway for scheduling and managing jailcall executions
+ */
 class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, metricsBusImpl: MetricsEventBus, ec: ExecutionContext) {
   import akka.pattern.ask
 
@@ -19,12 +22,27 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
   private val execTimeout = new Timeout(maxCallDuration)
   private val refCache = new ConcurrentHashMap[String, ActorRef]
 
+  /**
+   * Schedule a [[JailedExecution]] from within an actor or by providing a target [[akka.actor.ActorRef]]
+   *
+   * @param cmd a [[JailedExecution]]
+   * @param receiver the receiver of the response. This will be either a [[JailcallExecutionResult]] or in case of a
+   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]
+   */
   def executeToRef(cmd: JailedExecution[_])(implicit receiver: ActorRef) = {
     val startTime = System.currentTimeMillis()
     val action = JailedAction(startTime, None, cmd)
     askRefInternal(cmd, action)
   }
 
+  /**
+   * Schedule a [[JailedExecution]] from within an actor, adding the sender of the current message to the request
+   * context
+   *
+   * @param cmd a [[JailedExecution]]
+   * @param receiver the receiver of the response. This will be either a [[JailcallExecutionResult]] or in case of a
+   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]
+   */
   def executeToRefWithContext(cmd: JailedExecution[_])(implicit receiver: ActorRef, senderContext: ActorContext): Unit = {
     val startTime = System.currentTimeMillis()
     val action = JailedAction(startTime, Some(senderContext.sender()), cmd)
@@ -48,6 +66,14 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
     }
   }
 
+  /**
+   * Schedule a [[JailedExecution]] which gets executed to a [[scala.concurrent.Future]]. This has the advantage that
+   * command results can be processed outside an actor context.
+   *
+   * @param cmd a [[JailedExecution]]
+   * @tparam R result type of the execution
+   * @return
+   */
   def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[JailcallExecutionResult[R]] = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
@@ -68,6 +94,9 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
     jailcallRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
   }
 
+  /**
+   * Get an eventual consistent snapshot of the current [[CommandKey]] statistics
+   */
   def statsFor(key: CommandKey): CmdKeyStatsSnapshot = {
     metricsBusImpl.statsFor(key)
   }
