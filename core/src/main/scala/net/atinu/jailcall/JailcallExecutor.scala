@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.actor._
 import akka.util.Timeout
 import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor }
-import net.atinu.jailcall.internal.JailedAction
+import net.atinu.jailcall.internal.{ JailedCommandExecutor, JailedAction }
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
@@ -74,11 +74,15 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    * @tparam R result type of the execution
    * @return
    */
-  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[JailcallExecutionResult[R]] = {
+  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[R] = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
     def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, None, cmd))(execTimeout)
       .mapTo[JailcallExecutionResult[R]]
+      .transform(res => res.result, {
+        case e: JailcallExecutionException => e.failure
+        case err => err
+      })(JailedCommandExecutor.sameThreadExecutionContext)
     if (refCache.containsKey(cmdKey)) {
       askInternal(refCache.get(cmdKey))
     } else {

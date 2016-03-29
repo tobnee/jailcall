@@ -23,7 +23,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def execute: Future[String] = Future.successful("succFuture")
     })
     whenReady(res) { v =>
-      v should equal(JailcallExecutionResult("succFuture"))
+      v should equal("succFuture")
     }
   }
 
@@ -43,7 +43,7 @@ class JailcallTest extends ActorTest("JailcallTest") with Futures {
       def execute = Future.failed(err)
     })
     whenReady(res.failed) { v =>
-      v should equal(JailcallExecutionException(err, None))
+      v should equal(err)
     }
   }
 

@@ -281,7 +281,7 @@ object JailedCommandExecutor {
   private[jailcall] case object ClosingCircuitBreakerFailed
   private[jailcall] case object ClosingCircuitBreakerSucceed
 
-  private object sameThreadExecutionContext extends ExecutionContext with JailcallBatchingExecutor {
+  private[jailcall] object sameThreadExecutionContext extends ExecutionContext with JailcallBatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
     override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =
