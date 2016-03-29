@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SyncJailedExecution - net.atinu.jailcall.SyncJailedExecution</title>
-          <meta name="description" content="SyncJailedExecution - net.atinu.jailcall.SyncJailedExecution" />
-          <meta name="keywords" content="SyncJailedExecution net.atinu.jailcall.SyncJailedExecution" />
+          <title>ScalaFutureCommand - net.atinu.jailcall.ScalaFutureCommand</title>
+          <meta name="description" content="ScalaFutureCommand - net.atinu.jailcall.ScalaFutureCommand" />
+          <meta name="keywords" content="ScalaFutureCommand net.atinu.jailcall.ScalaFutureCommand" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../index.html';
-            var hash = 'net.atinu.jailcall.SyncJailedExecution';
+            var hash = 'net.atinu.jailcall.ScalaFutureCommand';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -28,12 +28,14 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Trait" src="../../../lib/trait_big.png" />
+        <a href="ScalaFutureCommand$.html" title="See companion object"><img alt="Class/Object" src="../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a href="../../package.html" class="extype" name="net">net</a>.<a href="../package.html" class="extype" name="net.atinu">atinu</a>.<a href="package.html" class="extype" name="net.atinu.jailcall">jailcall</a></p>
-        <h1>SyncJailedExecution</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="net.atinu.jailcall">package jailcall</a>
+        <h1><a href="ScalaFutureCommand$.html" title="See companion object">ScalaFutureCommand</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="ScalaFutureCommand$.html" title="See companion object">object ScalaFutureCommand</a>
+            | <a href="package.html" class="extype" name="net.atinu.jailcall">package jailcall</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -41,21 +43,19 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SyncJailedExecution</span><span class="tparams">[<span name="RC">RC</span>]</span><span class="result"> extends <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a> with <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span>]</span>
+        <span class="name">ScalaFutureCommand</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A default <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a> which infers the <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a> based on the name of the class.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span>], <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
-        </div><div class="toggleContainer block">
-            <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="SyncJailedCommand.html" class="extype" name="net.atinu.jailcall.SyncJailedCommand">SyncJailedCommand</a></div>
-          </div></div>
+          <div class="superTypes hiddenContent"><a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a>, <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>], <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>], <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
         
 
       <div id="mbrsel">
@@ -72,7 +72,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="net.atinu.jailcall.SyncJailedExecution"><span>SyncJailedExecution</span></li><li class="in" name="net.atinu.jailcall.JailedExecution"><span>JailedExecution</span></li><li class="in" name="net.atinu.jailcall.NamedCommand"><span>NamedCommand</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="net.atinu.jailcall.ScalaFutureCommand"><span>ScalaFutureCommand</span></li><li class="in" name="net.atinu.jailcall.DefaultCommandNaming"><span>DefaultCommandNaming</span></li><li class="in" name="net.atinu.jailcall.ScalaFutureExecution"><span>ScalaFutureExecution</span></li><li class="in" name="net.atinu.jailcall.JailedExecution"><span>JailedExecution</span></li><li class="in" name="net.atinu.jailcall.NamedCommand"><span>NamedCommand</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -89,12 +89,32 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="net.atinu.jailcall.ScalaFutureCommand#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():net.atinu.jailcall.ScalaFutureCommand[T]"></a>
+      <a id="&lt;init&gt;:ScalaFutureCommand[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ScalaFutureCommand</span><span class="params">()</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@&lt;init&gt;():net.atinu.jailcall.ScalaFutureCommand[T]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="net.atinu.jailcall.SyncJailedExecution.E" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="E=RC"></a>
+              <ol><li name="net.atinu.jailcall.ScalaFutureExecution.E" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="E=scala.concurrent.Future[RC]"></a>
       <a id="E:E"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -102,14 +122,14 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">E</span><span class="result"> = <span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span></span>
+        <span class="name">E</span><span class="result"> = <span class="extype" name="scala.concurrent.Future">Future</span>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@E=RC" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@E=scala.concurrent.Future[RC]" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="net.atinu.jailcall.SyncJailedExecution">SyncJailedExecution</a> → <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></dd></dl></div>
+      <p class="shortcomment cmt">container type of the execution result</p><div class="fullcomment"><div class="comment cmt"><p>container type of the execution result</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a> → <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></dd></dl></div>
     </li><li name="net.atinu.jailcall.JailedExecution.R" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="R=RC"></a>
       <a id="R:R"></a>
@@ -119,10 +139,10 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">R</span><span class="result"> = <span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span></span>
+        <span class="name">R</span><span class="result"> = <span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@R=RC" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@R=RC" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -132,24 +152,7 @@
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="net.atinu.jailcall.NamedCommand#cmdKey" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="cmdKey:net.atinu.jailcall.CommandKey"></a>
-      <a id="cmdKey:CommandKey"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">cmdKey</span><span class="result">: <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@cmdKey:net.atinu.jailcall.CommandKey" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a></dd></dl></div>
-    </li><li name="net.atinu.jailcall.JailedExecution#execute" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="net.atinu.jailcall.JailedExecution#execute" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="execute:JailedExecution.this.E"></a>
       <a id="execute:E"></a>
       <h4 class="signature">
@@ -158,10 +161,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">execute</span><span class="result">: <a href="#E=RC" class="extmbr" name="net.atinu.jailcall.SyncJailedExecution.E">E</a></span>
+        <span class="name">execute</span><span class="result">: <a href="#E=scala.concurrent.Future[RC]" class="extmbr" name="net.atinu.jailcall.ScalaFutureCommand.E">E</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@execute:JailedExecution.this.E" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@execute:JailedExecution.this.E" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -183,7 +186,7 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -200,7 +203,7 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@##():Int" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@##():Int" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -217,7 +220,7 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -234,7 +237,7 @@
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -251,7 +254,7 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@clone():Object" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@clone():Object" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -262,6 +265,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="net.atinu.jailcall.DefaultCommandNaming#cmdKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cmdKey:net.atinu.jailcall.CommandKey"></a>
+      <a id="cmdKey:CommandKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cmdKey</span><span class="result">: <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@cmdKey:net.atinu.jailcall.CommandKey" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a> → <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -274,7 +294,7 @@
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -291,7 +311,7 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@equals(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -308,7 +328,7 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -331,7 +351,7 @@
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@getClass():Class[_]" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -348,7 +368,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@hashCode():Int" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@hashCode():Int" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -365,7 +385,7 @@
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -382,7 +402,7 @@
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -399,7 +419,7 @@
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@notify():Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -416,7 +436,7 @@
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -433,7 +453,7 @@
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -450,7 +470,7 @@
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@toString():String" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@toString():String" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -467,7 +487,7 @@
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@wait():Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -490,7 +510,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -513,7 +533,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.SyncJailedExecution@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.ScalaFutureCommand@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -533,8 +553,12 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="net.atinu.jailcall.JailedExecution">
-              <h3>Inherited from <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span>]</h3>
+        <div class="parent" name="net.atinu.jailcall.DefaultCommandNaming">
+              <h3>Inherited from <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></h3>
+            </div><div class="parent" name="net.atinu.jailcall.ScalaFutureExecution">
+              <h3>Inherited from <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>]</h3>
+            </div><div class="parent" name="net.atinu.jailcall.JailedExecution">
+              <h3>Inherited from <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>]</h3>
             </div><div class="parent" name="net.atinu.jailcall.NamedCommand">
               <h3>Inherited from <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a></h3>
             </div><div class="parent" name="scala.AnyRef">

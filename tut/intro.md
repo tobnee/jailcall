@@ -6,9 +6,20 @@ knowing, making you applications reliable can still be a cumbersome and time int
 depth in using Akka and related tools. For that reason **jailcall** aims to provide a safe-by-default approach for 
 distributed communication with Akka on top of existing Akka abstractions.
 
+## How do you get it
+The current release targets Scala 2.11.x together with the Akka 2.3.x and 2.4.x series.
+
+```scala
+libraryDependencies += "net.atinu" %% "jailcall" % "0.1.0-SNAPSHOT"
+
+// one of
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.2"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.14"
+```
+
 ## How it works
 The user specifies a so-called `JailedExecution` for every remote call which should be protected. The `JailedExecution`
-is a wrapper for this operation, giving it an identity in the form of a `CommandKey`. A `(Sync/Aync)JailedCommand` is a
+is a wrapper for this operation, giving it an identity in the form of a `CommandKey`. A `ScalaFutureCommand` is a
 implementation of a `JailedExecution`, which builds the command name based on the name of the command class.
 
 One possible command would be to get repository names from a user at Github using the Github-API.
@@ -18,7 +29,7 @@ import net.atinu.jailcall._
 
 case class UserRepos(user: String, repos: List[String])
 
-class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
+class GitHubApiCall(user: String) extends ScalaFutureCommand[UserRepos] {
 
   def execute = getGitHupRepos()
     

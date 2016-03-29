@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 case class UserRepos(user: String, repos: List[String])
 
-class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
+class GitHubApiCall(user: String) extends ScalaFutureCommand[UserRepos] {
 
   def execute = getGitHupRepos()
   
@@ -17,7 +17,7 @@ class GitHubApiCall(user: String) extends AsyncJailedCommand[UserRepos] {
 
 ### Create an anonymous `JailedExecution`
 ```scala
-def anonymousGitHubApiCall(user: String) = new AsyncJailedExecution[UserRepos] {
+def anonymousGitHubApiCall(user: String) = new ScalaFutureExecution[UserRepos] {
 
   def cmdKey = CommandKey("get-repos-for-user")
 
@@ -77,8 +77,8 @@ command execution. Fallbacks in *jallcall* are also commands and will be process
 ```scala
 case class UserRepos(user: String, repos: List[String])
 
-class GitHubApiCall(user: String, cacheLookup: AsyncJailedCommand[UserRepos]) extends 
-  AsyncJailedCommand[UserRepos] with CmdFallback {
+class GitHubApiCall(user: String, cacheLookup: ScalaFutureExecution[UserRepos]) extends 
+  ScalaFutureCommand[UserRepos] with CmdFallback {
 
   def execute = getGitHupRepos()
   
@@ -100,9 +100,9 @@ import scala.concurrent.ExecutionContext
 
 case class SimpleHttpResponse(status: Int, body: String)
 
-class GitHubApiCall(user: String)(implicit ec: ExecutionContext) extends AsyncJailedCommand[UserRepos] {
+class GitHubApiCall(user: String)(implicit ec: ExecutionContext) extends ScalaFutureCommand[UserRepos] {
  
-   def execute = AsyncJailedExecution
+   def execute = ScalaFutureExecution
      .filterBadRequest(getGitHupRepos())(isBadRequest)
      .map(toUserRepo)
    

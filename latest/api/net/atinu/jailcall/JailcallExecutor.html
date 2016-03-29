@@ -49,7 +49,8 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Public gateway for scheduling and managing jailcall executions
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -219,7 +220,7 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToFuture" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToFuture" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToFuture[R](cmd:net.atinu.jailcall.JailedExecution[R])(implicittag:scala.reflect.ClassTag[R]):scala.concurrent.Future[net.atinu.jailcall.JailcallExecutionResult[R]]"></a>
       <a id="executeToFuture[R](JailedExecution[R])(ClassTag[R]):Future[JailcallExecutionResult[R]]"></a>
       <h4 class="signature">
@@ -235,8 +236,10 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRef" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> which gets executed to a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> which gets executed to a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>. This has the advantage that
+command results can be processed outside an actor context.
+</p></div><dl class="paramcmts block"><dt class="tparam">R</dt><dd class="cmt"><p>result type of the execution</p></dd><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd></dl></div>
+    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRef" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToRef(cmd:net.atinu.jailcall.JailedExecution[_])(implicitreceiver:akka.actor.ActorRef):Unit"></a>
       <a id="executeToRef(JailedExecution[_])(ActorRef):Unit"></a>
       <h4 class="signature">
@@ -252,8 +255,11 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRefWithContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor or by providing a target <span class="extype" name="akka.actor.ActorRef">akka.actor.ActorRef</span>
+</p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor or by providing a target <span class="extype" name="akka.actor.ActorRef">akka.actor.ActorRef</span>
+</p></div><dl class="paramcmts block"><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd><dt class="param">receiver</dt><dd class="cmt"><p>the receiver of the response. This will be either a <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> or in case of a
+                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a></p></dd></dl></div>
+    </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRefWithContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToRefWithContext(cmd:net.atinu.jailcall.JailedExecution[_])(implicitreceiver:akka.actor.ActorRef,implicitsenderContext:akka.actor.ActorContext):Unit"></a>
       <a id="executeToRefWithContext(JailedExecution[_])(ActorRef,ActorContext):Unit"></a>
       <h4 class="signature">
@@ -269,7 +275,12 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor, adding the sender of the current message to the request
+context
+</p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor, adding the sender of the current message to the request
+context
+</p></div><dl class="paramcmts block"><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd><dt class="param">receiver</dt><dd class="cmt"><p>the receiver of the response. This will be either a <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> or in case of a
+                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a></p></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -428,7 +439,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Get an eventual consistent snapshot of the current <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a> statistics
+</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

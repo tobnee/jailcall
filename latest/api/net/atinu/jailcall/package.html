@@ -88,41 +88,7 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="net.atinu.jailcall.AsyncJailedCommand" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="AsyncJailedCommand[T]extendsAsyncJailedExecution[T]withDefaultCommandNaming"></a>
-      <a id="AsyncJailedCommand[T]:AsyncJailedCommand[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="AsyncJailedCommand.html"><span class="name">AsyncJailedCommand</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="AsyncJailedExecution.html" class="extype" name="net.atinu.jailcall.AsyncJailedExecution">AsyncJailedExecution</a>[<span class="extype" name="net.atinu.jailcall.AsyncJailedCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@AsyncJailedCommand[T]extendsAsyncJailedExecution[T]withDefaultCommandNaming" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="net.atinu.jailcall.AsyncJailedExecution" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="AsyncJailedExecution[RC]extendsNamedCommandwithJailedExecution[RC]"></a>
-      <a id="AsyncJailedExecution[RC]:AsyncJailedExecution[RC]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="AsyncJailedExecution.html"><span class="name">AsyncJailedExecution</span></a><span class="tparams">[<span name="RC">RC</span>]</span><span class="result"> extends <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a> with <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.AsyncJailedExecution.RC">RC</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@AsyncJailedExecution[RC]extendsNamedCommandwithJailedExecution[RC]" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="net.atinu.jailcall.BadRequestException" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="net.atinu.jailcall.BadRequestException" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="BadRequestExceptionextendsThrowable"></a>
       <a id="BadRequestException:BadRequestException"></a>
       <h4 class="signature">
@@ -138,7 +104,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">A specific exception type which signals that jailcall should not include this failed message in any error statistic
+</p>
     </li><li name="net.atinu.jailcall.BadRequestExceptionWithCause" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BadRequestExceptionWithCauseextendsRuntimeExceptionwithpackage.BadRequestException"></a>
       <a id="BadRequestExceptionWithCause:BadRequestExceptionWithCause"></a>
@@ -156,6 +123,42 @@
       </a>
     </span>
       
+    </li><li name="net.atinu.jailcall.BlockingCommand" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BlockingCommand[T]extendsBlockingExecution[T]withDefaultCommandNaming"></a>
+      <a id="BlockingCommand[T]:BlockingCommand[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BlockingCommand.html"><span class="name">BlockingCommand</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="BlockingExecution.html" class="extype" name="net.atinu.jailcall.BlockingExecution">BlockingExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package@BlockingCommand[T]extendsBlockingExecution[T]withDefaultCommandNaming" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A default <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a> which infers the <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a> based on the name of the class.</p>
+    </li><li name="net.atinu.jailcall.BlockingExecution" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="BlockingExecution[RC]extendsNamedCommandwithJailedExecution[RC]"></a>
+      <a id="BlockingExecution[RC]:BlockingExecution[RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BlockingExecution.html"><span class="name">BlockingExecution</span></a><span class="tparams">[<span name="RC">RC</span>]</span><span class="result"> extends <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a> with <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingExecution.RC">RC</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package@BlockingExecution[RC]extendsNamedCommandwithJailedExecution[RC]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> based on a blocking operation
+</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> based on a blocking operation
+</p></div><dl class="paramcmts block"><dt class="tparam">RC</dt><dd class="cmt"><p>result type of the execution</p></dd></dl></div>
     </li><li name="net.atinu.jailcall.CallStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CallStatsextendsProductwithSerializable"></a>
       <a id="CallStats:CallStats"></a>
@@ -189,7 +192,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Provides a fallback for a failed <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>
+</p>
     </li><li name="net.atinu.jailcall.CmdKeyStatsSnapshot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CmdKeyStatsSnapshotextendsProductwithSerializable"></a>
       <a id="CmdKeyStatsSnapshot:CmdKeyStatsSnapshot"></a>
@@ -223,7 +227,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">The identity of a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>
+</p>
     </li><li name="net.atinu.jailcall.DefaultCommandKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DefaultCommandKeyextendsCommandKeywithProductwithSerializable"></a>
       <a id="DefaultCommandKey:DefaultCommandKey"></a>
@@ -291,7 +296,7 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">The result of a failed execution in jailcall</p>
     </li><li name="net.atinu.jailcall.JailcallExecutionResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JailcallExecutionResult[T]extendsProductwithSerializable"></a>
       <a id="JailcallExecutionResult[T]:JailcallExecutionResult[T]"></a>
@@ -308,7 +313,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">The result of a sucessful execution in jailcall
+</p>
     </li><li name="net.atinu.jailcall.JailcallExecutor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JailcallExecutorextendsAnyRef"></a>
       <a id="JailcallExecutor:JailcallExecutor"></a>
@@ -325,8 +331,9 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="net.atinu.jailcall.JailedExecution" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Public gateway for scheduling and managing jailcall executions
+</p>
+    </li><li name="net.atinu.jailcall.JailedExecution" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="JailedExecution[RC]extendsNamedCommand"></a>
       <a id="JailedExecution[RC]:JailedExecution[RC]"></a>
       <h4 class="signature">
@@ -342,7 +349,8 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Parent class for all execution types supported by jailcall.</p><div class="fullcomment"><div class="comment cmt"><p>Parent class for all execution types supported by jailcall.
+</p></div><dl class="paramcmts block"><dt class="tparam">RC</dt><dd class="cmt"><p>result type of the execution</p></dd></dl></div>
     </li><li name="net.atinu.jailcall.LatencyStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LatencyStatsextendsProductwithSerializable"></a>
       <a id="LatencyStats:LatencyStats"></a>
@@ -412,6 +420,42 @@
       </a>
     </span>
       
+    </li><li name="net.atinu.jailcall.ScalaFutureCommand" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ScalaFutureCommand[T]extendsScalaFutureExecution[T]withDefaultCommandNaming"></a>
+      <a id="ScalaFutureCommand[T]:ScalaFutureCommand[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ScalaFutureCommand.html"><span class="name">ScalaFutureCommand</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package@ScalaFutureCommand[T]extendsScalaFutureExecution[T]withDefaultCommandNaming" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A default <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a> which infers the <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a> based on the name of the class.</p>
+    </li><li name="net.atinu.jailcall.ScalaFutureExecution" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ScalaFutureExecution[RC]extendsNamedCommandwithJailedExecution[RC]"></a>
+      <a id="ScalaFutureExecution[RC]:ScalaFutureExecution[RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ScalaFutureExecution.html"><span class="name">ScalaFutureExecution</span></a><span class="tparams">[<span name="RC">RC</span>]</span><span class="result"> extends <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a> with <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.ScalaFutureExecution.RC">RC</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package@ScalaFutureExecution[RC]extendsNamedCommandwithJailedExecution[RC]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> based on a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>
+</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> based on a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>
+</p></div><dl class="paramcmts block"><dt class="tparam">RC</dt><dd class="cmt"><p>result type of the execution</p></dd></dl></div>
     </li><li name="net.atinu.jailcall.SimpleBadRequestException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SimpleBadRequestExceptionextendsRuntimeExceptionwithpackage.BadRequestException"></a>
       <a id="SimpleBadRequestException:SimpleBadRequestException"></a>
@@ -446,40 +490,6 @@
       </a>
     </span>
       
-    </li><li name="net.atinu.jailcall.SyncJailedCommand" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="SyncJailedCommand[T]extendsSyncJailedExecution[T]withDefaultCommandNaming"></a>
-      <a id="SyncJailedCommand[T]:SyncJailedCommand[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SyncJailedCommand.html"><span class="name">SyncJailedCommand</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="SyncJailedExecution.html" class="extype" name="net.atinu.jailcall.SyncJailedExecution">SyncJailedExecution</a>[<span class="extype" name="net.atinu.jailcall.SyncJailedCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@SyncJailedCommand[T]extendsSyncJailedExecution[T]withDefaultCommandNaming" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="net.atinu.jailcall.SyncJailedExecution" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="SyncJailedExecution[RC]extendsNamedCommandwithJailedExecution[RC]"></a>
-      <a id="SyncJailedExecution[RC]:SyncJailedExecution[RC]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="SyncJailedExecution.html"><span class="name">SyncJailedExecution</span></a><span class="tparams">[<span name="RC">RC</span>]</span><span class="result"> extends <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a> with <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.SyncJailedExecution.RC">RC</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@SyncJailedExecution[RC]extendsNamedCommandwithJailedExecution[RC]" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li></ol>
             </div>
 
@@ -487,41 +497,7 @@
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="net.atinu.jailcall.AsyncJailedCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AsyncJailedCommand"></a>
-      <a id="AsyncJailedCommand:AsyncJailedCommand"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="AsyncJailedCommand$.html"><span class="name">AsyncJailedCommand</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@AsyncJailedCommand" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="net.atinu.jailcall.AsyncJailedExecution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AsyncJailedExecution"></a>
-      <a id="AsyncJailedExecution:AsyncJailedExecution"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="AsyncJailedExecution$.html"><span class="name">AsyncJailedExecution</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@AsyncJailedExecution" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="net.atinu.jailcall.BadRequestException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="net.atinu.jailcall.BadRequestException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BadRequestException"></a>
       <a id="BadRequestException:BadRequestException"></a>
       <h4 class="signature">
@@ -534,6 +510,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#net.atinu.jailcall.package@BadRequestException" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="net.atinu.jailcall.BlockingCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BlockingCommand"></a>
+      <a id="BlockingCommand:BlockingCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BlockingCommand$.html"><span class="name">BlockingCommand</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package@BlockingCommand" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -674,36 +667,36 @@
       </a>
     </span>
       
-    </li><li name="net.atinu.jailcall.SyncJailedCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SyncJailedCommand"></a>
-      <a id="SyncJailedCommand:SyncJailedCommand"></a>
+    </li><li name="net.atinu.jailcall.ScalaFutureCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ScalaFutureCommand"></a>
+      <a id="ScalaFutureCommand:ScalaFutureCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SyncJailedCommand$.html"><span class="name">SyncJailedCommand</span></a>
+        <a href="ScalaFutureCommand$.html"><span class="name">ScalaFutureCommand</span></a>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@SyncJailedCommand" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.package@ScalaFutureCommand" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="net.atinu.jailcall.internal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="internal"></a>
-      <a id="internal:internal"></a>
+    </li><li name="net.atinu.jailcall.ScalaFutureExecution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ScalaFutureExecution"></a>
+      <a id="ScalaFutureExecution:ScalaFutureExecution"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">package</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="internal/package.html"><span class="name">internal</span></a>
+        <a href="ScalaFutureExecution$.html"><span class="name">ScalaFutureExecution</span></a>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package@internal" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.package@ScalaFutureExecution" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -1,22 +1,22 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DispatcherHolder - net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder</title>
-          <meta name="description" content="DispatcherHolder - net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder" />
-          <meta name="keywords" content="DispatcherHolder net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder" />
+          <title>BlockingCommand - net.atinu.jailcall.BlockingCommand</title>
+          <meta name="description" content="BlockingCommand - net.atinu.jailcall.BlockingCommand" />
+          <meta name="keywords" content="BlockingCommand net.atinu.jailcall.BlockingCommand" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
-      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
-      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
-      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
-      <script type="text/javascript" src="../../../../lib/template.js"></script>
-      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
       
       <script type="text/javascript">
          if(top === self) {
-            var url = '../../../../index.html';
-            var hash = 'net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder';
+            var url = '../../../index.html';
+            var hash = 'net.atinu.jailcall.BlockingCommand';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -28,30 +28,33 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Class" src="../../../../lib/class_big.png" />
-        <p id="owner"><a href="../../../package.html" class="extype" name="net">net</a>.<a href="../../package.html" class="extype" name="net.atinu">atinu</a>.<a href="../package.html" class="extype" name="net.atinu.jailcall">jailcall</a>.<a href="package.html" class="extype" name="net.atinu.jailcall.internal">internal</a>.<a href="DispatcherLookup$.html" class="extype" name="net.atinu.jailcall.internal.DispatcherLookup">DispatcherLookup</a></p>
-        <h1>DispatcherHolder</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="DispatcherLookup$.html" class="extype" name="net.atinu.jailcall.internal.DispatcherLookup">package DispatcherLookup</a>
+        <a href="BlockingCommand$.html" title="See companion object"><img alt="Class/Object" src="../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../package.html" class="extype" name="net">net</a>.<a href="../package.html" class="extype" name="net.atinu">atinu</a>.<a href="package.html" class="extype" name="net.atinu.jailcall">jailcall</a></p>
+        <h1><a href="BlockingCommand$.html" title="See companion object">BlockingCommand</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="BlockingCommand$.html" title="See companion object">object BlockingCommand</a>
+            | <a href="package.html" class="extype" name="net.atinu.jailcall">package jailcall</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">DispatcherHolder</span><span class="params">(<span name="dispatcher">dispatcher: <span class="extype" name="akka.dispatch.MessageDispatcher">MessageDispatcher</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">BlockingCommand</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="BlockingExecution.html" class="extype" name="net.atinu.jailcall.BlockingExecution">BlockingExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>] with <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A default <a href="ScalaFutureExecution.html" class="extype" name="net.atinu.jailcall.ScalaFutureExecution">ScalaFutureExecution</a> which infers the <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a> based on the name of the class.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a>, <a href="BlockingExecution.html" class="extype" name="net.atinu.jailcall.BlockingExecution">BlockingExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>], <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>], <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +72,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder"><span>DispatcherHolder</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="net.atinu.jailcall.BlockingCommand"><span>BlockingCommand</span></li><li class="in" name="net.atinu.jailcall.DefaultCommandNaming"><span>DefaultCommandNaming</span></li><li class="in" name="net.atinu.jailcall.BlockingExecution"><span>BlockingExecution</span></li><li class="in" name="net.atinu.jailcall.JailedExecution"><span>JailedExecution</span></li><li class="in" name="net.atinu.jailcall.NamedCommand"><span>NamedCommand</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -88,32 +91,89 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(dispatcher:akka.dispatch.MessageDispatcher,isDefault:Boolean):net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder"></a>
-      <a id="&lt;init&gt;:DispatcherHolder"></a>
+              <ol><li name="net.atinu.jailcall.BlockingCommand#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():net.atinu.jailcall.BlockingCommand[T]"></a>
+      <a id="&lt;init&gt;:BlockingCommand[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DispatcherHolder</span><span class="params">(<span name="dispatcher">dispatcher: <span class="extype" name="akka.dispatch.MessageDispatcher">MessageDispatcher</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">BlockingCommand</span><span class="params">()</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@&lt;init&gt;(dispatcher:akka.dispatch.MessageDispatcher,isDefault:Boolean):net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@&lt;init&gt;():net.atinu.jailcall.BlockingCommand[T]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li></ol>
             </div>
 
-        
-
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="net.atinu.jailcall.BlockingExecution.E" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="E=RC"></a>
+      <a id="E:E"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">E</span><span class="result"> = <span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@E=RC" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">container type of the execution result</p><div class="fullcomment"><div class="comment cmt"><p>container type of the execution result</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BlockingExecution.html" class="extype" name="net.atinu.jailcall.BlockingExecution">BlockingExecution</a> → <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></dd></dl></div>
+    </li><li name="net.atinu.jailcall.JailedExecution.R" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="R=RC"></a>
+      <a id="R:R"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">R</span><span class="result"> = <span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@R=RC" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></dd></dl></div>
+    </li></ol>
+            </div>
 
         <div id="values" class="values members">
-              <h3>Value Members</h3>
+              <h3>Abstract Value Members</h3>
+              <ol><li name="net.atinu.jailcall.JailedExecution#execute" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="execute:JailedExecution.this.E"></a>
+      <a id="execute:E"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execute</span><span class="result">: <a href="#E=RC" class="extmbr" name="net.atinu.jailcall.BlockingCommand.E">E</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@execute:JailedExecution.this.E" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Concrete Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a>
       <a id="!=(Any):Boolean"></a>
@@ -126,8 +186,8 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@!=(x$1:Any):Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
@@ -143,8 +203,8 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@##():Int" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@##():Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
@@ -160,8 +220,8 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@==(x$1:Any):Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
@@ -177,8 +237,8 @@
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@asInstanceOf[T0]:T0" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
@@ -194,34 +254,34 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@clone():Object" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@clone():Object" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder#dispatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="dispatcher:akka.dispatch.MessageDispatcher"></a>
-      <a id="dispatcher:MessageDispatcher"></a>
+    </li><li name="net.atinu.jailcall.DefaultCommandNaming#cmdKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cmdKey:net.atinu.jailcall.CommandKey"></a>
+      <a id="cmdKey:CommandKey"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">dispatcher</span><span class="result">: <span class="extype" name="akka.dispatch.MessageDispatcher">MessageDispatcher</span></span>
+        <span class="name">cmdKey</span><span class="result">: <a href="CommandKey.html" class="extype" name="net.atinu.jailcall.CommandKey">CommandKey</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@dispatcher:akka.dispatch.MessageDispatcher" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@cmdKey:net.atinu.jailcall.CommandKey" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a> → <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -234,11 +294,28 @@
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -251,11 +328,11 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@finalize():Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="symbol">classOf[java.lang.Throwable]</span>
@@ -274,45 +351,28 @@
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@getClass():Class[_]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder#isCustom" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="isCustom:Boolean"></a>
-      <a id="isCustom:Boolean"></a>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isCustom</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@isCustom:Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder#isDefault" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="isDefault:Boolean"></a>
-      <a id="isDefault:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDefault</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@isDefault:Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -325,8 +385,8 @@
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
@@ -342,8 +402,8 @@
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
@@ -359,8 +419,8 @@
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@notify():Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
@@ -376,8 +436,8 @@
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@notifyAll():Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
@@ -393,11 +453,28 @@
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@toString():String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -410,8 +487,8 @@
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@wait():Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
@@ -433,8 +510,8 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
@@ -456,8 +533,8 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#net.atinu.jailcall.internal.DispatcherLookup$$DispatcherHolder@wait(x$1:Long):Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      <a href="../../../index.html#net.atinu.jailcall.BlockingCommand@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
@@ -476,14 +553,14 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
-              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="java.io.Serializable">
-              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="scala.Product">
-              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
-            </div><div class="parent" name="scala.Equals">
-              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+        <div class="parent" name="net.atinu.jailcall.DefaultCommandNaming">
+              <h3>Inherited from <a href="DefaultCommandNaming.html" class="extype" name="net.atinu.jailcall.DefaultCommandNaming">DefaultCommandNaming</a></h3>
+            </div><div class="parent" name="net.atinu.jailcall.BlockingExecution">
+              <h3>Inherited from <a href="BlockingExecution.html" class="extype" name="net.atinu.jailcall.BlockingExecution">BlockingExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>]</h3>
+            </div><div class="parent" name="net.atinu.jailcall.JailedExecution">
+              <h3>Inherited from <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a>[<span class="extype" name="net.atinu.jailcall.BlockingCommand.T">T</span>]</h3>
+            </div><div class="parent" name="net.atinu.jailcall.NamedCommand">
+              <h3>Inherited from <a href="NamedCommand.html" class="extype" name="net.atinu.jailcall.NamedCommand">NamedCommand</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
