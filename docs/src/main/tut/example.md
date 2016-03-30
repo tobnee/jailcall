@@ -73,7 +73,7 @@ class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
 
 ### Create a `JailedCommand` with fallback
 To increase the resiliency of a command it can make sense to provide fallback logic in case something goes wrong with a
-command execution. Fallbacks in *jallcall* are also commands and will be processed with the same rules as others.
+command execution. Fallbacks in **jallcall** are also commands and will be processed with the same rules as others.
 ```tut:silent
 case class UserRepos(user: String, repos: List[String])
 
@@ -93,7 +93,7 @@ Sometimes you want to mark a command as a failure even if it is considered a suc
 A good example is a HTTP BadRequest. In this case the `Future` will be executed successfully but the command is not
 considered to be a success. Another situation where you would want to mark a command as bad request is when the command
 yields a failure but the fallback logic should not be executed. In both cases a failed command with the result BadRequestException
-signals *jailcall* that it should treat the result as a bad request. Bad requests are also not treated as failures in the
+signals **jailcall** that it should treat the result as a bad request. Bad requests are also not treated as failures in the
 error statistics meaning that bad requests can not lead to open circuit breakers.
 ```tut:silent
 import scala.concurrent.ExecutionContext
@@ -115,7 +115,7 @@ class GitHubApiCall(user: String)(implicit ec: ExecutionContext) extends ScalaFu
 ```
 
 ### Get stats for a command
-*jailcall* offers you ways to query statistics about runtime behaviour given the `CommandKey` of the command in question 
+**jailcall** offers you ways to query statistics about runtime behaviour given the `CommandKey` of the command in question 
 ```tut:silent
 object JailcallApp extends App {
   val system = ActorSystem("JailcallSystem")
