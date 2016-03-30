@@ -9,7 +9,6 @@ import net.atinu.jailcall.internal.{ JailedCommandExecutor, JailedAction }
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
 /**
@@ -74,12 +73,11 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    * @tparam R result type of the execution
    * @return
    */
-  def executeToFuture[R](cmd: JailedExecution[R])(implicit tag: ClassTag[R]): Future[R] = {
+  def executeToFuture[R](cmd: JailedExecution[R]): Future[R] = {
     val startTime = System.currentTimeMillis()
     val cmdKey = cmd.cmdKey.name
     def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, None, cmd))(execTimeout)
-      .mapTo[JailcallExecutionResult[R]]
-      .transform(res => res.result, {
+      .transform(res => res.asInstanceOf[JailcallExecutionResult[R]].result, {
         case e: JailcallExecutionException => e.failure
         case err => err
       })(JailedCommandExecutor.sameThreadExecutionContext)
