@@ -6,7 +6,7 @@ Defend your [Akka](https://github.com/akka/akka) applications from failures in d
 - Automatic command bulkheading
 - Insight into you remote calls by providing latency and call statistics
 
-[![Build Status](https://travis-ci.org/tobnee/jailcall.svg?branch=master)](https://travis-ci.org/tobnee/akka-defender)
+[![Build Status](https://travis-ci.org/tobnee/jailcall.svg?branch=master)](https://travis-ci.org/tobnee/jailcall)
 
 Take a look at the [documentation](http://tobnee.github.io/jailcall/).
 
