@@ -10,7 +10,7 @@ distributed communication with Akka on top of existing Akka abstractions.
 The current release targets Scala 2.11.x together with the Akka 2.3.x and 2.4.x series.
 
 ```scala
-libraryDependencies += "net.atinu" %% "jailcall" % "0.1.0-SNAPSHOT"
+libraryDependencies += "net.atinu" %% "jailcall" % "0.1.0"
 
 // one of
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.2"

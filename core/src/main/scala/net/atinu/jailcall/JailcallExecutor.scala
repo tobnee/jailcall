@@ -71,7 +71,9 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *
    * @param cmd a [[JailedExecution]]
    * @tparam R result type of the execution
-   * @return
+   * @return a future containing the result or a failure. jailcall specific failure types are a
+    *         [[java.util.concurrent.TimeoutException]] in case the call took too long or a
+    *         [[akka.pattern.CircuitBreakerOpenException]] if the call was prevented due to an open circuit breaker
    */
   def executeToFuture[R](cmd: JailedExecution[R]): Future[R] = {
     val startTime = System.currentTimeMillis()
