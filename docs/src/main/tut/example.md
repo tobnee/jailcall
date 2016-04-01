@@ -62,10 +62,10 @@ class GithubApiActor(jailcall: JailcallExecutor) extends Actor {
     case GetReposForUser(user) => 
       jailcall.executeToRefWithContext(new GitHubApiCall(user))
 
-    case JailcallExecutionResult.Success(result: UserRepos, originalSender) =>
+    case JailcallExecutionResult.SuccessWithContext(result: UserRepos, originalSender) =>
       originalSender ! GetUserReposResponse(result)
     
-    case JailcallExecutionResult.FailureStatus(exception, originalSender) =>
+    case JailcallExecutionResult.FailureWithContext(exception, originalSender) =>
       originalSender ! GetUserReposFailedResponse(exception)
   }
 }

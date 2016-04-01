@@ -26,7 +26,8 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *
    * @param cmd a [[JailedExecution]]
    * @param receiver the receiver of the response. This will be either a [[JailcallExecutionResult]] or in case of a
-   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]
+   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]. Take a look at the
+   *                [[JailcallExecutionResult]] companion object for result extractors.
    */
   def executeToRef(cmd: JailedExecution[_])(implicit receiver: ActorRef) = {
     val startTime = System.currentTimeMillis()
@@ -40,7 +41,8 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *
    * @param cmd a [[JailedExecution]]
    * @param receiver the receiver of the response. This will be either a [[JailcallExecutionResult]] or in case of a
-   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]
+   *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]. Take a look at the
+   *                [[JailcallExecutionResult]] companion object for result extractors.
    */
   def executeToRefWithContext(cmd: JailedExecution[_])(implicit receiver: ActorRef, senderContext: ActorContext): Unit = {
     val startTime = System.currentTimeMillis()
@@ -72,8 +74,8 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    * @param cmd a [[JailedExecution]]
    * @tparam R result type of the execution
    * @return a future containing the result or a failure. jailcall specific failure types are a
-    *         [[java.util.concurrent.TimeoutException]] in case the call took too long or a
-    *         [[akka.pattern.CircuitBreakerOpenException]] if the call was prevented due to an open circuit breaker
+   *         [[java.util.concurrent.TimeoutException]] in case the call took too long or a
+   *         [[akka.pattern.CircuitBreakerOpenException]] if the call was prevented due to an open circuit breaker
    */
   def executeToFuture[R](cmd: JailedExecution[R]): Future[R] = {
     val startTime = System.currentTimeMillis()

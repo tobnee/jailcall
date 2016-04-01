@@ -4,12 +4,15 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 trait DefaultCommandNaming extends NamedCommand {
-  override val cmdKey = CommandKey(buildNameFromClass)
+  override def cmdKey = CommandKey(buildNameFromClass)
+
+  private val defaultName = "anonymous-cmd"
 
   private def buildNameFromClass = try {
     this.getClass.getSimpleName
   } catch {
-    case NonFatal(_) => "anonymous-cmd"
+    case NonFatal(_) => defaultName
+    case e: InternalError => defaultName
   }
 }
 
