@@ -6,6 +6,7 @@ import akka.actor._
 import akka.jailcall.JailcallBatchingExecutor
 import akka.event.Logging.MDC
 import akka.pattern.CircuitBreakerOpenException
+import com.typesafe.config.ConfigRenderOptions
 import net.atinu.jailcall._
 import net.atinu.jailcall.internal.CmdKeyStatsActor._
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder

@@ -1,6 +1,7 @@
 package net.atinu.jailcall.internal
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
+import com.typesafe.config.{ Config, ConfigRenderOptions }
 import net.atinu.jailcall.internal.DispatcherLookup.DispatcherHolder
 import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreationFailed, CmdExecutorCreated, NoCmdExecutorForThatKey, CreateCmdExecutor }
 import net.atinu.jailcall._
@@ -56,11 +57,14 @@ private[jailcall] class JailcallRootActor(metricsBus: MetricsEventBus) extends A
       dispatcherHolder <- dispatcherLookup.lookupDispatcher(cmdKey, cfg.isolation, needsIsolation)
     } yield {
       val ref = createExecutorActor(cmdKey, cfg, dispatcherHolder)
-      log.debug(s"created jaillcall executor for command key: $cmdKey")
+      log.debug("{}: created jaillcall executor with config: {}", cmdKey.name, configString(cfg))
       msgKeyToExecutor += cmdKey.name -> ref
       ref
     }
   }
+  def configString(cfg: MsgConfig) =
+    if (log.isDebugEnabled) cfg.rawConfigValue.root().render(ConfigRenderOptions.concise())
+    else ""
 
   def createExecutorActor(msgKey: CommandKey, cfg: MsgConfig, dispatcherHolder: DispatcherHolder) = {
     context.actorOf(JailedCommandExecutor.props(msgKey, cfg, dispatcherHolder, metricsBus))

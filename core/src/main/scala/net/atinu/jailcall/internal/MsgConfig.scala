@@ -9,7 +9,7 @@ import net.atinu.jailcall.CommandKey
 import scala.concurrent.duration._
 import scala.util.Try
 
-private[internal] case class MsgConfig(circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig, metrics: MetricsConfig)
+private[internal] case class MsgConfig(rawConfigValue: Config, circuitBreaker: CircuitBreakerConfig, isolation: IsolationConfig, metrics: MetricsConfig)
 
 private[internal] case class MetricsConfig(rollingStatsWindowDuration: FiniteDuration, rollingStatsBuckets: Int)
 
@@ -30,33 +30,25 @@ private[internal] class MsgConfigBuilder(config: Config) {
 
   def loadConfigForKey(key: CommandKey): Try[MsgConfig] = {
     Try {
-      MsgConfig(loadCircuitBreakerConfig(key), loadDispatcherConfig(key), loadMetricsConfig(key))
+      val cmdKeyConfig = loadCmdKeyConfig(key)
+      MsgConfig(
+        rawConfigValue = cmdKeyConfig,
+        circuitBreaker = asCbConfig(cmdKeyConfig.getConfig("circuit-breaker")),
+        isolation = asIsolationConfig(cmdKeyConfig.getConfig("isolation")),
+        metrics = asMetricsConfig(cmdKeyConfig.getConfig("metrics"))
+      )
     }
   }
 
-  private val defaultCbConfigValue = loadConfigDefault("jailcall.command.default.circuit-breaker")
+  private val defaultConfigValue: Config = loadConfig("jailcall.command.default")
+    .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
-  private val defaultCbConfig = forceLoadCbConfigInPath(defaultCbConfigValue)
+  private def loadCmdKeyConfig(key: CommandKey): Config =
+    loadConfig(s"jailcall.command.${key.name}")
+      .map(_.withFallback(defaultConfigValue))
+      .getOrElse(defaultConfigValue)
 
-  private val defaultIsolationConfigValue = loadConfigDefault("jailcall.command.default.isolation")
-
-  private val defaultIsolationConfig = forceLoadIsolationConfig(defaultIsolationConfigValue)
-
-  private val defaultMetricsConfigValue = loadConfigDefault("jailcall.command.default.metrics")
-
-  private val defaultMetricsConfig = forceLoadMetricsConfig(defaultMetricsConfigValue)
-
-  private def loadCircuitBreakerConfig(key: CommandKey): CircuitBreakerConfig =
-    loadCbConfigInPath(loadConfig(cmdKeyCBConfigPath(key))
-      .map(_.withFallback(defaultCbConfigValue))).getOrElse(defaultCbConfig)
-
-  private def cmdKeyCBConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.circuit-breaker"
-
-  private def loadCbConfigInPath(cfg: Option[Config]) = {
-    cfg.map { cbConfig => forceLoadCbConfigInPath(cbConfig) }
-  }
-
-  private def forceLoadCbConfigInPath(cbConfig: Config): CircuitBreakerConfig = {
+  private def asCbConfig(cbConfig: Config): CircuitBreakerConfig = {
     CircuitBreakerConfig(
       enabled = cbConfig.getBoolean("enabled"),
       requestVolumeThreshold = cbConfig.getInt("request-volume-threshold"),
@@ -66,26 +58,15 @@ private[internal] class MsgConfigBuilder(config: Config) {
     )
   }
 
-  private def loadDispatcherConfig(key: CommandKey): IsolationConfig = {
-    loadIsolationConfig(loadConfig(cmdKeyDispatcherConfigPath(key))
-      .map(_.withFallback(defaultIsolationConfigValue))).getOrElse(defaultIsolationConfig)
-  }
-
-  private def cmdKeyDispatcherConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.isolation"
-
-  private def loadIsolationConfig(isolationConfig: Option[Config]) = {
-    isolationConfig.map(cfg => forceLoadIsolationConfig(cfg))
-  }
-
-  private def forceLoadIsolationConfig(isolationConfig: Config) = {
+  private def asIsolationConfig(isolationConfig: Config) = {
     IsolationConfig(
       custom =
       if (isolationConfig.getBoolean("auto")) None
-      else forceLoadCustomIsolationConfig(isolationConfig)
+      else asCustomIsolationConfig(isolationConfig)
     )
   }
 
-  private def forceLoadCustomIsolationConfig(isolationConfig: Config) = {
+  private def asCustomIsolationConfig(isolationConfig: Config) = {
     loadConfigString("custom.dispatcher", isolationConfig).map { dispatcher =>
       CustomIsolationConfig(
         dispatcherName = dispatcher
@@ -93,37 +74,18 @@ private[internal] class MsgConfigBuilder(config: Config) {
     }
   }
 
-  private def loadMetricsConfig(key: CommandKey): MetricsConfig =
-    loadMetricsConfigInPath(loadConfig(cmdKeyMetricsConfigPath(key))
-      .map(_.withFallback(defaultMetricsConfigValue)))
-      .collect {
-        case mc if (mc.rollingStatsWindowDuration.toMillis % mc.rollingStatsBuckets) == 0 => mc
-        case _ =>
-          throw new ConfigurationException("rolling-stats.window should be divisible by rolling-stats.buckets")
-      }.getOrElse(defaultMetricsConfig)
-
-  private def loadMetricsConfigInPath(cfg: Option[Config]): Option[MetricsConfig] = {
-    cfg.map { cbConfig => forceLoadMetricsConfig(cbConfig) }
-  }
-
-  private def forceLoadMetricsConfig(config: Config): MetricsConfig = {
-    MetricsConfig(
+  private def asMetricsConfig(config: Config): MetricsConfig = {
+    val mc = MetricsConfig(
       rollingStatsWindowDuration = loadFiniteDuration(config, "rolling-stats.window", TimeUnit.MILLISECONDS),
       rollingStatsBuckets = config.getInt("rolling-stats.buckets")
     )
+    if ((mc.rollingStatsWindowDuration.toMillis % mc.rollingStatsBuckets) == 0) mc
+    else throw new ConfigurationException("rolling-stats.window should be divisible by rolling-stats.buckets")
   }
-
-  private def cmdKeyMetricsConfigPath(key: CommandKey) = s"jailcall.command.${key.name}.metrics"
-
-  private def loadConfigDefault(key: String) = loadConfig(key)
-    .getOrElse(throw new ConfigurationException("reference.conf is not in sync with CircuitBreakerConfigBuilder"))
 
   private def loadConfig(path: String): Option[Config] = {
     if (config.hasPath(path)) Some(config.getConfig(path)) else None
   }
-
-  private def loadConfigString(key: String): Option[String] =
-    loadConfigString(key, config)
 
   private def loadConfigString(key: String, cfg: Config): Option[String] = {
     if (cfg.hasPath(key)) Some(cfg.getString(key)) else None
