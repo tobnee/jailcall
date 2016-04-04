@@ -40,7 +40,7 @@ lazy val docs = project.in(file("docs"))
 
 lazy val common = Seq(
   organization := "net.atinu",
-  version := "0.1.0-SNAPSHOT",
+  version := "0.1.0",
   name := "jailcall"
 )
 
