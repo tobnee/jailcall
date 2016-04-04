@@ -238,7 +238,9 @@
     </span>
       <p class="shortcomment cmt">Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> which gets executed to a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> which gets executed to a <span class="extype" name="scala.concurrent.Future">scala.concurrent.Future</span>. This has the advantage that
 command results can be processed outside an actor context.
-</p></div><dl class="paramcmts block"><dt class="tparam">R</dt><dd class="cmt"><p>result type of the execution</p></dd><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="tparam">R</dt><dd class="cmt"><p>result type of the execution</p></dd><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd><dt>returns</dt><dd class="cmt"><p>a future containing the result or a failure. jailcall specific failure types are a
+        <span class="extype" name="java.util.concurrent.TimeoutException">java.util.concurrent.TimeoutException</span> in case the call took too long or a
+        <span class="extype" name="akka.pattern.CircuitBreakerOpenException">akka.pattern.CircuitBreakerOpenException</span> if the call was prevented due to an open circuit breaker</p></dd></dl></div>
     </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRef" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToRef(cmd:net.atinu.jailcall.JailedExecution[_])(implicitreceiver:akka.actor.ActorRef):Unit"></a>
       <a id="executeToRef(JailedExecution[_])(ActorRef):Unit"></a>
@@ -258,7 +260,8 @@ command results can be processed outside an actor context.
       <p class="shortcomment cmt">Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor or by providing a target <span class="extype" name="akka.actor.ActorRef">akka.actor.ActorRef</span>
 </p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor or by providing a target <span class="extype" name="akka.actor.ActorRef">akka.actor.ActorRef</span>
 </p></div><dl class="paramcmts block"><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd><dt class="param">receiver</dt><dd class="cmt"><p>the receiver of the response. This will be either a <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> or in case of a
-                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a></p></dd></dl></div>
+                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a>. Take a look at the
+               <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> companion object for result extractors.</p></dd></dl></div>
     </li><li name="net.atinu.jailcall.JailcallExecutor#executeToRefWithContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeToRefWithContext(cmd:net.atinu.jailcall.JailedExecution[_])(implicitreceiver:akka.actor.ActorRef,implicitsenderContext:akka.actor.ActorContext):Unit"></a>
       <a id="executeToRefWithContext(JailedExecution[_])(ActorRef,ActorContext):Unit"></a>
@@ -280,7 +283,8 @@ context
 </p><div class="fullcomment"><div class="comment cmt"><p>Schedule a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a> from within an actor, adding the sender of the current message to the request
 context
 </p></div><dl class="paramcmts block"><dt class="param">cmd</dt><dd class="cmt"><p>a <a href="JailedExecution.html" class="extype" name="net.atinu.jailcall.JailedExecution">JailedExecution</a></p></dd><dt class="param">receiver</dt><dd class="cmt"><p>the receiver of the response. This will be either a <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> or in case of a
-                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a></p></dd></dl></div>
+                failure a <span class="extype" name="akka.actor.Status">akka.actor.Status</span> containing a <a href="package$$JailcallExecutionException.html" class="extype" name="net.atinu.jailcall.JailcallExecutionException">JailcallExecutionException</a>. Take a look at the
+               <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a> companion object for result extractors.</p></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>

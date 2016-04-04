@@ -10,7 +10,7 @@ distributed communication with Akka on top of existing Akka abstractions.
 The current release targets Scala 2.11.x together with the Akka 2.3.x and 2.4.x series.
 
 ```scala
-libraryDependencies += "net.atinu" %% "jailcall" % "0.1.0-SNAPSHOT"
+libraryDependencies += "net.atinu" %% "jailcall" % "0.1.0"
 
 // one of
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.2"
@@ -18,9 +18,11 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.14"
 ```
 
 ## How it works
-The user specifies a so-called `JailedExecution` for every remote call which should be protected. The `JailedExecution`
-is a wrapper for this operation, giving it an identity in the form of a `CommandKey`. A `ScalaFutureCommand` is a
-implementation of a `JailedExecution`, which builds the command name based on the name of the command class.
+The user specifies a so-called `JailedExecution` for every remote call which should be protected. A `JailedExecution`
+is combination of an operation and an identity in the form of a `CommandKey`. There are specific `JailedExecution` 
+variants for certain classes of execution. For example the `ScalaFutureExecution` is the variant, which supports wrapping
+a `scala.concurrent.Future` into a command. A `ScalaFutureCommand` is a implementation of a `ScalaFutureExecution`, which 
+builds the `CommandKey` based on the name of the command class.
 
 One possible command would be to get repository names from a user at Github using the Github-API.
 
@@ -45,16 +47,23 @@ import akka.actor.ActorSystem
 
 object JailcallApp extends App {
   val system = ActorSystem("JailcallSystem")
+  
+  // get a JailcallExecutor from the Jailcall Akka extension
   val jailcall = Jailcall(system).executor
   
-  val repos: Future[UserRepos] = 
-      jailcall.executeToFuture(new GitHubApiCall("tobnee"))
+  // build an instance of a command which can be reused in future calls
+  val jailcallExec = new GitHubApiCall("tobnee")
+  
+  // execute the command and obtain the result as a future
+  // this might fail because of the timeout and circuit breaker 
+  // logic provided by jailcall
+  val repos: Future[UserRepos] = jailcall.executeToFuture(jailcallExec)
 }
 ```
 
-For each command type a dedicated Actor is created to manage the execution of commands. During processing *jailcall* 
+For each command type a dedicated Actor is created to manage the execution of commands. During processing **jailcall** 
 collects statistics about processing times as well as error statistics. If the execution of a single command takes too 
-long *jailcall* will kill the supervised execution (timeout). If the command execution for a given type will result in 
-too many errors in the current rolling time window (20 seconds by default), *jailcall* will prevent future command 
+long **jailcall** will kill the supervised execution (timeout). If the command execution for a given type will result in 
+too many errors in the current rolling time window (20 seconds by default), **jailcall** will prevent future command 
 executions from being started (circuit breaker). The default for those cases is to report this error back to the caller, 
 together with the information when the command can be executed again.

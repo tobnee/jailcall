@@ -163,24 +163,26 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="net.atinu.jailcall.JailcallExecutionResult.FailureStatus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FailureStatus"></a>
-      <a id="FailureStatus:FailureStatus"></a>
+      <p class="shortcomment cmt">Extract the exception from the result
+</p>
+    </li><li name="net.atinu.jailcall.JailcallExecutionResult.FailureWithContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FailureWithContext"></a>
+      <a id="FailureWithContext:FailureWithContext"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="package$$JailcallExecutionResult$$FailureStatus$.html"><span class="name">FailureStatus</span></a>
+        <a href="package$$JailcallExecutionResult$$FailureWithContext$.html"><span class="name">FailureWithContext</span></a>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#net.atinu.jailcall.package$$JailcallExecutionResult$@FailureStatus" title="Permalink" target="_top">
+      <a href="../../../index.html#net.atinu.jailcall.package$$JailcallExecutionResult$@FailureWithContext" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Extract the exception and the original sender from the result.</p><div class="fullcomment"><div class="comment cmt"><p>Extract the exception and the original sender from the result. Requires request to be made with context.
+</p></div></div>
     </li><li name="net.atinu.jailcall.JailcallExecutionResult.Success" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Success"></a>
       <a id="Success:Success"></a>
@@ -197,7 +199,26 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Extract the value from the result
+</p>
+    </li><li name="net.atinu.jailcall.JailcallExecutionResult.SuccessWithContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SuccessWithContext"></a>
+      <a id="SuccessWithContext:SuccessWithContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="package$$JailcallExecutionResult$$SuccessWithContext$.html"><span class="name">SuccessWithContext</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package$$JailcallExecutionResult$@SuccessWithContext" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extract the value and the original sender from the result.</p><div class="fullcomment"><div class="comment cmt"><p>Extract the value and the original sender from the result. Requires request to be made with context.
+</p></div></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -295,6 +316,40 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="net.atinu.jailcall.JailcallExecutionResult#fromResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromResult[T](res:T,originalSender:akka.actor.ActorRef):net.atinu.jailcall.package.JailcallExecutionResult[T]"></a>
+      <a id="fromResult[T](T,ActorRef):JailcallExecutionResult[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromResult</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="res">res: <span class="extype" name="net.atinu.jailcall.JailcallExecutionResult.fromResult.T">T</span></span>, <span name="originalSender">originalSender: <span class="extype" name="akka.actor.ActorRef">ActorRef</span></span>)</span><span class="result">: <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a>[<span class="extype" name="net.atinu.jailcall.JailcallExecutionResult.fromResult.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package$$JailcallExecutionResult$@fromResult[T](res:T,originalSender:akka.actor.ActorRef):net.atinu.jailcall.package.JailcallExecutionResult[T]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="net.atinu.jailcall.JailcallExecutionResult#fromResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromResult[T](res:T):net.atinu.jailcall.package.JailcallExecutionResult[T]"></a>
+      <a id="fromResult[T](T):JailcallExecutionResult[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromResult</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="res">res: <span class="extype" name="net.atinu.jailcall.JailcallExecutionResult.fromResult.T">T</span></span>)</span><span class="result">: <a href="package$$JailcallExecutionResult.html" class="extype" name="net.atinu.jailcall.JailcallExecutionResult">JailcallExecutionResult</a>[<span class="extype" name="net.atinu.jailcall.JailcallExecutionResult.fromResult.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#net.atinu.jailcall.package$$JailcallExecutionResult$@fromResult[T](res:T):net.atinu.jailcall.package.JailcallExecutionResult[T]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
