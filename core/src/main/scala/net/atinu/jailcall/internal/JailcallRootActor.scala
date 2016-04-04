@@ -62,6 +62,7 @@ private[jailcall] class JailcallRootActor(metricsBus: MetricsEventBus) extends A
       ref
     }
   }
+
   def configString(cfg: MsgConfig) =
     if (log.isDebugEnabled) cfg.rawConfigValue.root().render(ConfigRenderOptions.concise())
     else ""
