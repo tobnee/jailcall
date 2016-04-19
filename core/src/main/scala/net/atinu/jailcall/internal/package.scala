@@ -8,14 +8,14 @@ import scala.util.{ Failure, Success, Try }
 
 package object internal {
 
-  private[jailcall] case class JailedAction(startTime: Long, senderRef: Option[ActorRef], cmd: JailedExecution[_])
+  private[jailcall] case class JailedAction(startTime: Long, senderRef: Option[ActorRef], isJavaRequest: Boolean, cmd: JailedExecution[_, _])
 
   object JailedAction {
 
-    def now[T](cmd: JailedExecution[T]) = JailedAction(System.currentTimeMillis(), None, cmd)
+    def now[T](cmd: JailedExecution[T, _], isJavaRequest: Boolean = false) = JailedAction(System.currentTimeMillis(), None, isJavaRequest, cmd)
   }
 
-  private[jailcall] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T])
+  private[jailcall] case class FallbackAction[T](fallbackPromise: Promise[T], startTime: Long, cmd: JailedExecution[T, _])
 
   private[jailcall] case class CmdMetrics(name: CommandKey)
 

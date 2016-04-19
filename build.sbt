@@ -83,7 +83,9 @@ lazy val coreAkka23 = project.aggregate(core).settings(
 
 def baseDependencies(withIt: Boolean = false) = Seq(
   "org.hdrhistogram" % "HdrHistogram" % "2.1.8",
-  "org.scalatest" %% "scalatest" % "2.2.6" % testScope(withIt)
+  "org.scalatest" %% "scalatest" % "2.2.6" % testScope(withIt),
+  "junit" % "junit" % "4.12" % "test",
+  "com.novocode" % "junit-interface" % "0.11" % "test"
 )
 
 def akkaDepenencies(version: String, withIt: Boolean = false) = Seq(

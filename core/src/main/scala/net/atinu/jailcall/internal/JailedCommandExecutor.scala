@@ -29,13 +29,13 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
   def receive = receiveClosed(isHalfOpen = false)
 
   def receiveClosed(isHalfOpen: Boolean): Receive = {
-    case JailedAction(startTime, senderRef, msg: ScalaFutureExecution[_]) =>
+    case JailedAction(startTime, senderRef, isJavaRequest, msg: ScalaFutureExecution[_]) =>
       implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
-      toResCommand(callAsync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
+      toSender(callAsync(msg, startTime, isFallback = false, isHalfOpen), senderRef, isJavaRequest)
 
-    case JailedAction(startTime, senderRef, msg: BlockingExecution[_]) =>
+    case JailedAction(startTime, senderRef, isJavaRequest, msg: BlockingExecution[_]) =>
       implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
-      toResCommand(callSync(msg, startTime, isFallback = false, isHalfOpen), senderRef) pipeTo sender()
+      toSender(callSync(msg, startTime, isFallback = false, isHalfOpen), senderRef, isJavaRequest)
 
     case FallbackAction(promise, startTime, msg: ScalaFutureExecution[_]) =>
       fallbackFuture(promise, callAsync(msg, startTime, isFallback = true, isHalfOpen))
@@ -55,9 +55,9 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
     case TryCloseCircuitBreaker =>
       context.become(receiveClosed(isHalfOpen = true))
 
-    case JailedAction(_, senderRef, msg: JailedExecution[_]) =>
+    case JailedAction(_, senderRef, isJavaRequest, msg: JailedExecution[_, _]) =>
       implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
-      toResCommand(callBreak(msg, calcCircuitBreakerOpenRemaining(end)), senderRef) pipeTo sender()
+      toSender(callBreak(msg, calcCircuitBreakerOpenRemaining(end)), senderRef, isJavaRequest)
 
     case FallbackAction(promise, startTime, cmd) =>
       promise.completeWith(callBreak(cmd, calcCircuitBreakerOpenRemaining(end)))
@@ -95,8 +95,25 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
     execFlow(msg, breakOnSingleFailure, totalStartTime, msg.execute)
   }
 
-  def toResCommand[T](res: Future[T], senderRef: Option[ActorRef])(implicit ec: ExecutionContext): Future[JailcallExecutionResult[T]] =
-    res.transform(res => JailcallExecutionResult(res, senderRef), t => JailcallExecutionException(t, senderRef))
+  def toSender[T](res: Future[T], senderRef: Option[ActorRef], isJavaRequest: Boolean)(implicit ec: ExecutionContext): Unit = {
+    import net.atinu.jailcall.javadsl.{ JailcallExecutionResult => JRes, JailcallExecutionException => JExec }
+    import java.util.Optional
+    def asJavaOpt[T](opt: Option[T]): Optional[T] = opt match {
+      case Some(v) => Optional.of(v)
+      case _ => Optional.empty()
+    }
+    if (isJavaRequest) {
+      res.transform(
+        res => new JRes(res, asJavaOpt(senderRef)),
+        t => new JExec(t, asJavaOpt(senderRef))
+      ) pipeTo sender()
+    } else {
+      res.transform(
+        res => JailcallExecutionResult(res, senderRef),
+        t => JailcallExecutionException(t, senderRef)
+      ) pipeTo sender()
+    }
+  }
 
   def cmdExecDebugMsg(isAsync: Boolean, isFallback: Boolean, breakOnSingleFailure: Boolean) = {
     def halfOpenMsg =
@@ -114,7 +131,7 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
     }
   }
 
-  def execFlow[T](msg: JailedExecution[T], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
+  def execFlow[T](msg: JailedExecution[T, _], breakOnSingleFailure: Boolean, totalStartTime: Long, execute: => Future[T]): Future[T] = {
     if (breakOnSingleFailure) waitForApproval()
     val res = process(msg, totalStartTime, execute)
     if (breakOnSingleFailure) checkForSingleFailure(res)
@@ -122,7 +139,7 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
   }
 
   // adapted based on the akka circuit breaker implementation
-  def process[T](msg: JailedExecution[T], totalStartTime: Long, body: => Future[T]): Future[T] = {
+  def process[T](msg: JailedExecution[T, _], totalStartTime: Long, body: => Future[T]): Future[T] = {
     implicit val ec = JailedCommandExecutor.sameThreadExecutionContext
 
     def materialize[U](value: ⇒ Future[U]): (Long, Future[U]) = {
@@ -157,7 +174,7 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
     p.future
   }
 
-  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T]): Try[T] = {
+  def processPostCall[T](result: Try[T], startTimeMs: Long, totalStartTime: Long, cmd: JailedExecution[T, _]): Try[T] = {
     setMdcContext()
     val statsRes = StatsResult.captureStart[T](result, startTimeMs)
     updateCallStats(cmd.cmdKey, totalStartTime, statsRes)
@@ -173,7 +190,7 @@ class JailedCommandExecutor(val cmdKey: CommandKey, val cfg: MsgConfig, val disp
     Promise.failed[T](new CircuitBreakerOpenException(remainingDuration)).future
   }
 
-  def fallbackIfDefined[T](msg: JailedExecution[T], exec: Future[T]): Future[T] = msg match {
+  def fallbackIfDefined[T](msg: JailedExecution[T, _], exec: Future[T]): Future[T] = msg match {
     case dynamic: CmdFallback =>
       fallbackIfValidRequest(exec) { err =>
         val fallbackPromise = Promise.apply[T]()

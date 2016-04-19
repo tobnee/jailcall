@@ -1,6 +1,7 @@
 package net.atinu
 
 import akka.actor.{ Status, ActorRef }
+import net.atinu.jailcall.common.BaseJailcallExecutionException
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NoStackTrace
@@ -121,10 +122,10 @@ package object jailcall {
 
   /**
    * The result of a failed execution in jailcall
+   *
    * @param failure
    * @param originalSender
    */
   case class JailcallExecutionException(failure: Throwable, val originalSender: Option[ActorRef] = None)
-    extends RuntimeException(failure) with NoStackTrace
-
+    extends BaseJailcallExecutionException(failure)
 }

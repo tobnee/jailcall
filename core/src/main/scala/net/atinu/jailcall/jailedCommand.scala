@@ -24,7 +24,7 @@ object ScalaFutureCommand {
     def execute = exec
   }
 
-  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T]): ScalaFutureExecution[T] with CmdFallback =
+  def withCmdFallback[T](key: String, exec: => Future[T], fb: => JailedExecution[T, _]): ScalaFutureExecution[T] with CmdFallback =
     new ScalaFutureExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 
@@ -47,7 +47,7 @@ object BlockingCommand {
     def execute = exec
   }
 
-  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T]): BlockingExecution[T] with CmdFallback =
+  def withCmdFallback[T](key: String, exec: => T, fb: => JailedExecution[T, _]): BlockingExecution[T] with CmdFallback =
     new BlockingExecution[T] with CmdFallback {
       def cmdKey = key.asKey
 

@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.jailcall.JailcallDispatcherConfigurator
-import net.atinu.jailcall.internal.JailcallRootActor
+import net.atinu.jailcall.internal.{ InternalJailcallExecutor, JailcallRootActor }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
@@ -37,7 +37,9 @@ class Jailcall(val system: ExtendedActorSystem) extends Extension with Extension
 
   private val maxCallDuration = loadMsDuration("jailcall.max-call-duration")
   private val maxCreateTime = loadMsDuration("jailcall.create-timeout")
-  val executor = new JailcallExecutor(jailcallRef, maxCreateTime, maxCallDuration, metricsBus, system.dispatcher)
+  private[jailcall] val ice = new InternalJailcallExecutor(jailcallRef, maxCreateTime, maxCallDuration, metricsBus, system.dispatcher)
+
+  val executor = new JailcallExecutor(ice)
 
   def lookup(): ExtensionId[_ <: Extension] = Jailcall
 }

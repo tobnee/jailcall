@@ -1,25 +1,14 @@
 package net.atinu.jailcall
 
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.actor._
-import akka.util.Timeout
-import net.atinu.jailcall.internal.JailcallRootActor.{ CmdExecutorCreated, CreateCmdExecutor }
-import net.atinu.jailcall.internal.{ JailedCommandExecutor, JailedAction }
+import net.atinu.jailcall.internal.InternalJailcallExecutor
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.Future
 
 /**
  * Public gateway for scheduling and managing jailcall executions
  */
-class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: FiniteDuration, maxCallDuration: FiniteDuration, metricsBusImpl: MetricsEventBus, ec: ExecutionContext) {
-  import akka.pattern.ask
-
-  private val createTimeout = new Timeout(maxCreateTime)
-  private val execTimeout = new Timeout(maxCallDuration)
-  private val refCache = new ConcurrentHashMap[String, ActorRef]
+class JailcallExecutor private[jailcall] (internalJailcallExecutor: InternalJailcallExecutor) {
 
   /**
    * Schedule a [[JailedExecution]] from within an actor or by providing a target [[akka.actor.ActorRef]]
@@ -29,10 +18,8 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]. Take a look at the
    *                [[JailcallExecutionResult]] companion object for result extractors.
    */
-  def executeToRef(cmd: JailedExecution[_])(implicit receiver: ActorRef) = {
-    val startTime = System.currentTimeMillis()
-    val action = JailedAction(startTime, None, cmd)
-    askRefInternal(cmd, action)
+  def executeToRef(cmd: JailedExecution[_, _])(implicit receiver: ActorRef) = {
+    internalJailcallExecutor.executeToRef(cmd, isJavaRequest = false)
   }
 
   /**
@@ -44,27 +31,8 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *                 failure a [[akka.actor.Status]] containing a [[JailcallExecutionException]]. Take a look at the
    *                [[JailcallExecutionResult]] companion object for result extractors.
    */
-  def executeToRefWithContext(cmd: JailedExecution[_])(implicit receiver: ActorRef, senderContext: ActorContext): Unit = {
-    val startTime = System.currentTimeMillis()
-    val action = JailedAction(startTime, Some(senderContext.sender()), cmd)
-    askRefInternal(cmd, action)
-  }
-
-  private def askRefInternal(cmd: JailedExecution[_], action: JailedAction)(implicit receiver: ActorRef): Unit = {
-    val cmdKey = cmd.cmdKey.name
-    if (refCache.containsKey(cmdKey)) {
-      refCache.get(cmdKey) ! action
-    } else {
-      askCreateExecutor(cmd).onComplete {
-        case Success(created: CmdExecutorCreated) =>
-          val executor = created.executor
-          executor ! action
-          refCache.put(cmdKey, executor)
-        case Failure(e) =>
-          // unlikely to happen
-          receiver ! Status.Failure(e)
-      }(ec)
-    }
+  def executeToRefWithContext(cmd: JailedExecution[_, _])(implicit receiver: ActorRef, senderContext: ActorContext): Unit = {
+    internalJailcallExecutor.executeToRefWithContext(cmd, isJavaRequest = false)
   }
 
   /**
@@ -77,35 +45,17 @@ class JailcallExecutor private[jailcall] (jailcallRef: ActorRef, maxCreateTime: 
    *         [[java.util.concurrent.TimeoutException]] in case the call took too long or a
    *         [[akka.pattern.CircuitBreakerOpenException]] if the call was prevented due to an open circuit breaker
    */
-  def executeToFuture[R](cmd: JailedExecution[R]): Future[R] = {
-    val startTime = System.currentTimeMillis()
-    val cmdKey = cmd.cmdKey.name
-    def askInternal(ref: ActorRef) = ref.ask(JailedAction(startTime, None, cmd))(execTimeout)
-      .transform(res => res.asInstanceOf[JailcallExecutionResult[R]].result, {
-        case e: JailcallExecutionException => e.failure
-        case err => err
-      })(JailedCommandExecutor.sameThreadExecutionContext)
-    if (refCache.containsKey(cmdKey)) {
-      askInternal(refCache.get(cmdKey))
-    } else {
-      askCreateExecutor(cmd).flatMap { created =>
-        val executor = created.executor
-        refCache.put(cmdKey, executor)
-        askInternal(executor)
-      }(ec)
-    }
-  }
-
-  private def askCreateExecutor[R](cmd: JailedExecution[R]): Future[CmdExecutorCreated] = {
-    jailcallRef.ask(CreateCmdExecutor(cmd.cmdKey, Some(cmd)))(createTimeout).mapTo[CmdExecutorCreated]
+  def executeToFuture[R](cmd: JailedExecution[R, _]): Future[R] = {
+    internalJailcallExecutor.executeToFuture(cmd, isJavaRequest = false)
   }
 
   /**
    * Get an eventual consistent snapshot of the current [[CommandKey]] statistics
    */
   def statsFor(key: CommandKey): CmdKeyStatsSnapshot = {
-    metricsBusImpl.statsFor(key)
+    internalJailcallExecutor.statsFor(key)
   }
 
-  def metricsBus: MetricsEventBus = metricsBusImpl
+  def metricsBus: MetricsEventBus =
+    internalJailcallExecutor.metricsBus
 }

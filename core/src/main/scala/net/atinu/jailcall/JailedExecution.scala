@@ -13,14 +13,13 @@ trait NamedCommand {
  *
  * @tparam RC result type of the execution
  */
-sealed trait JailedExecution[RC] extends NamedCommand {
+sealed trait JailedExecution[RC, EC] extends NamedCommand {
 
   type R = RC
 
-  /** container type of the execution result */
-  type E
+  type E = EC
 
-  def execute: E
+  def execute: EC
 }
 
 /**
@@ -28,28 +27,23 @@ sealed trait JailedExecution[RC] extends NamedCommand {
  *
  * @tparam RC result type of the execution
  */
-trait ScalaFutureExecution[RC] extends NamedCommand with JailedExecution[RC] {
-
-  type E = Future[RC]
-
-}
+trait ScalaFutureExecution[RC] extends NamedCommand with JailedExecution[RC, Future[RC]]
 
 /**
  * A [[JailedExecution]] based on a blocking operation
  *
  * @tparam RC result type of the execution
  */
-trait BlockingExecution[RC] extends NamedCommand with JailedExecution[RC] {
+trait BlockingExecution[RC] extends NamedCommand with JailedExecution[RC, RC] {
 
-  type E = RC
 }
 
 /**
  * Provides a fallback for a failed [[JailedExecution]]
  */
-trait CmdFallback { self: JailedExecution[_] =>
+trait CmdFallback { self: JailedExecution[_, _] =>
 
-  def fallback: JailedExecution[R @uncheckedVariance]
+  def fallback: JailedExecution[this.R @uncheckedVariance, _]
 }
 
 object ScalaFutureExecution {
